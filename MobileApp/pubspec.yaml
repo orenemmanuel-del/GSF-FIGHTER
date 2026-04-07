@@ -1,0 +1,48 @@
+name: gsf_fighter
+description: GSF FIGHTER - Master Bus Streaming Receiver x Gesaffelstein
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Audio playback
+  just_audio: ^0.9.40
+  audio_session: ^0.1.21
+
+  # Network
+  udp: ^5.0.3
+
+  # State management
+  provider: ^6.1.2
+
+  # UI
+  google_fonts: ^6.2.1
+  flutter_animate: ^4.5.0
+  shimmer: ^3.0.0
+
+  # Utils
+  permission_handler: ^11.3.1
+  network_info_plus: ^6.0.1
+  wakelock_plus: ^1.2.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/fonts/
+
+  fonts:
+    - family: ArcadeFont
+      fonts:
+        - asset: assets/fonts/PressStart2P-Regular.ttf
