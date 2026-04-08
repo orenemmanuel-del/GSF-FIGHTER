@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+:root {
+  --gsf-black: #0a0a0a;
+  --gsf-dark: #1a1a1a;
+  --gsf-mid: #2a2a2a;
+  --gsf-grey: #444444;
+  --gsf-red: #ff1e1e;
+  --gsf-red-dark: #8b0000;
+  --gsf-blue: #00c8ff;
+  --gsf-blue-dark: #0066aa;
+  --gsf-yellow: #ffe500;
+  --gsf-green: #00ff66;
+  --gsf-orange: #ff6600;
+  --gsf-purple: #8800ff;
+  --gsf-white: #eeeeee;
+  --gsf-dim: #888888;
+}
+
+@theme inline {
+  --color-background: var(--gsf-black);
+  --color-foreground: var(--gsf-white);
+  --color-gsf-black: var(--gsf-black);
+  --color-gsf-dark: var(--gsf-dark);
+  --color-gsf-mid: var(--gsf-mid);
+  --color-gsf-grey: var(--gsf-grey);
+  --color-gsf-red: var(--gsf-red);
+  --color-gsf-red-dark: var(--gsf-red-dark);
+  --color-gsf-blue: var(--gsf-blue);
+  --color-gsf-blue-dark: var(--gsf-blue-dark);
+  --color-gsf-yellow: var(--gsf-yellow);
+  --color-gsf-green: var(--gsf-green);
+  --color-gsf-orange: var(--gsf-orange);
+  --color-gsf-purple: var(--gsf-purple);
+  --color-gsf-white: var(--gsf-white);
+  --color-gsf-dim: var(--gsf-dim);
+}
+
+body {
+  background: var(--gsf-black);
+  color: var(--gsf-white);
+  overflow-x: hidden;
+}
+
+/* Scanlines overlay */
+.scanlines::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.015) 2px,
+    rgba(255, 255, 255, 0.015) 3px
+  );
+}
+
+/* Grid background */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Text glow effects */
+.glow-red {
+  text-shadow: 0 0 20px rgba(255, 30, 30, 0.6), 0 0 40px rgba(255, 30, 30, 0.3);
+}
+.glow-yellow {
+  text-shadow: 0 0 20px rgba(255, 229, 0, 0.6), 0 0 40px rgba(255, 229, 0, 0.3);
+}
+.glow-blue {
+  text-shadow: 0 0 20px rgba(0, 200, 255, 0.6), 0 0 40px rgba(0, 200, 255, 0.3);
+}
+.glow-green {
+  text-shadow: 0 0 20px rgba(0, 255, 102, 0.6), 0 0 40px rgba(0, 255, 102, 0.3);
+}
+
+/* Box glow */
+.box-glow-red {
+  box-shadow: 0 0 20px rgba(255, 30, 30, 0.3), inset 0 0 20px rgba(255, 30, 30, 0.05);
+}
+.box-glow-blue {
+  box-shadow: 0 0 20px rgba(0, 200, 255, 0.3), inset 0 0 20px rgba(0, 200, 255, 0.05);
+}
+.box-glow-yellow {
+  box-shadow: 0 0 20px rgba(255, 229, 0, 0.3), inset 0 0 20px rgba(255, 229, 0, 0.05);
+}
+
+/* Arcade border */
+.arcade-border {
+  border: 2px solid var(--gsf-grey);
+  position: relative;
+}
+.arcade-border::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  border: 1px solid rgba(255,255,255,0.05);
+  pointer-events: none;
+}
+
+/* Health bar animation */
+@keyframes health-fill {
+  from { width: 0; }
+  to { width: 100%; }
+}
+.health-animate {
+  animation: health-fill 1.5s ease-out forwards;
+}
+
+/* Pulse animation */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Fight text slam */
+@keyframes slam-in {
+  0% { transform: scale(3); opacity: 0; }
+  50% { transform: scale(0.9); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.slam-in {
+  animation: slam-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Fade up */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  animation: fade-up 0.8s ease-out forwards;
+  opacity: 0;
+}
+
+/* Stagger delays */
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+.delay-4 { animation-delay: 0.4s; }
+.delay-5 { animation-delay: 0.5s; }
+.delay-6 { animation-delay: 0.6s; }
+.delay-7 { animation-delay: 0.7s; }
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--gsf-black);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--gsf-grey);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gsf-red);
+}
