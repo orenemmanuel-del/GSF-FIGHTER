@@ -4,52 +4,28 @@ import { useEffect, useRef, useState } from "react";
 
 const features = [
   {
-    icon: "📡",
-    title: "REAL-TIME STREAM",
-    desc: "24-bit lossless audio from your DAW master bus to any phone. Under 50ms latency over WiFi.",
-    color: "text-gsf-red",
-    glow: "box-glow-red",
-    border: "border-gsf-red/30",
+    title: "Phone speaker",
+    desc: "Hear your mix through your phone's built-in speaker in real-time. No headphones, no external speakers — just the phone.",
   },
   {
-    icon: "📱",
-    title: "MULTI-DEVICE",
-    desc: "Up to 8 phones connected simultaneously. Everyone hears the mix in real-time.",
-    color: "text-gsf-blue",
-    glow: "box-glow-blue",
-    border: "border-gsf-blue/30",
+    title: "Real-time stream",
+    desc: "24-bit lossless audio from your DAW master bus. Under 50ms latency over WiFi.",
   },
   {
-    icon: "🔍",
-    title: "AUTO-DETECT",
-    desc: "Plugin broadcasts on your WiFi. The app finds it instantly — no IP address needed.",
-    color: "text-gsf-yellow",
-    glow: "box-glow-yellow",
-    border: "border-gsf-yellow/30",
+    title: "Auto-detect",
+    desc: "The app finds your plugin automatically on the network. No IP address, no setup.",
   },
   {
-    icon: "🎛️",
-    title: "6 GSF PRESETS",
-    desc: "Translation presets by Gesaffelstein: hear how your mix sounds on iPhone, AirPods, car, club, cheap earbuds, studio monitors.",
-    color: "text-gsf-green",
-    glow: "box-glow-blue",
-    border: "border-gsf-green/30",
+    title: "One tap",
+    desc: "Open the app, tap Start Listening. That's it. Your mix plays on the phone speaker instantly.",
   },
   {
-    icon: "🔌",
-    title: "ALL DAWs",
-    desc: "VST3, AU, AAX + Standalone. Logic, Ableton, Pro Tools, FL Studio, Cubase, REAPER, Bitwig.",
-    color: "text-gsf-orange",
-    glow: "box-glow-red",
-    border: "border-gsf-orange/30",
+    title: "All DAWs",
+    desc: "VST3, AU, AAX and Standalone. Logic, Ableton, Pro Tools, FL Studio, Cubase, REAPER, Bitwig.",
   },
   {
-    icon: "🎮",
-    title: "ARCADE UI",
-    desc: "Street Fighter aesthetic. Health bar meters, FIGHT! animations, fighter character presets. Dark. Powerful.",
-    color: "text-gsf-purple",
-    glow: "box-glow-blue",
-    border: "border-gsf-purple/30",
+    title: "Multi-device",
+    desc: "Up to 8 phones connected at the same time. Everyone in the room checks the mix on their phone.",
   },
 ];
 
@@ -62,43 +38,45 @@ export default function Features() {
       ([entry]) => {
         if (entry.isIntersecting) setVisible(true);
       },
-      { threshold: 0.15 }
+      { threshold: 0.1 }
     );
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
 
   return (
-    <section ref={ref} className="py-24 px-6" id="features">
-      <h2 className="text-center text-3xl md:text-5xl font-black tracking-wider text-gsf-yellow glow-yellow mb-4">
-        CHOOSE YOUR WEAPON
-      </h2>
-      <p className="text-center text-gsf-dim text-sm mb-16 tracking-widest uppercase">
-        Everything you need to check your mix anywhere
-      </p>
+    <section ref={ref} className="py-24 px-8 bg-cds-gray-10" id="features">
+      <div className="max-w-[1200px] mx-auto">
+        <h2
+          className="text-[42px] leading-[1.19] text-cds-gray-100 mb-2"
+          style={{ fontWeight: 300 }}
+        >
+          Why GSF Fighter
+        </h2>
+        <p className="text-sm text-cds-gray-70 tracking-[0.16px] mb-16">
+          The fastest way to check your mix on a phone
+        </p>
 
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {features.map((f, i) => (
-          <div
-            key={i}
-            className={`relative p-6 rounded-xl bg-gsf-dark border ${f.border} ${f.glow} transition-all duration-700 hover:scale-[1.02] hover:brightness-110 ${
-              visible ? "fade-up" : "opacity-0"
-            } delay-${i + 1}`}
-          >
-            <div className="text-4xl mb-4">{f.icon}</div>
-            <h3
-              className={`text-lg font-black tracking-wider ${f.color} mb-2`}
-            >
-              {f.title}
-            </h3>
-            <p className="text-gsf-dim text-sm leading-relaxed">{f.desc}</p>
-
-            {/* Corner accent */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-cds-gray-20">
+          {features.map((f, i) => (
             <div
-              className={`absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 ${f.border} rounded-tr-xl`}
-            />
-          </div>
-        ))}
+              key={i}
+              className={`bg-cds-white p-8 hover:bg-cds-gray-10-hover transition-colors ${
+                visible ? "fade-up" : "opacity-0"
+              } delay-${Math.min(i + 1, 4)}`}
+            >
+              <h3
+                className="text-xl leading-[1.4] text-cds-gray-100 mb-3"
+                style={{ fontWeight: 600 }}
+              >
+                {f.title}
+              </h3>
+              <p className="text-sm leading-[1.29] text-cds-gray-70 tracking-[0.16px]">
+                {f.desc}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

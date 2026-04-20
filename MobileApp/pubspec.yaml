@@ -1,7 +1,7 @@
 name: gsf_fighter
 description: GSF FIGHTER - Master Bus Streaming Receiver x Gesaffelstein
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+3
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -43,6 +43,15 @@ flutter:
     - assets/fonts/
 
   fonts:
-    - family: ArcadeFont
+    - family: IBMPlexMono
       fonts:
-        - asset: assets/fonts/PressStart2P-Regular.ttf
+        - asset: assets/fonts/IBMPlexMono-Regular.ttf
+        - asset: assets/fonts/IBMPlexMono-Bold.ttf
+          weight: 700
+    - family: IBMPlexSans
+      fonts:
+        - asset: assets/fonts/IBMPlexSans-Light.ttf
+          weight: 300
+        - asset: assets/fonts/IBMPlexSans-Regular.ttf
+        - asset: assets/fonts/IBMPlexSans-SemiBold.ttf
+          weight: 600

@@ -1,5 +1,5 @@
-/// GSF FIGHTER - Connection Code Input
-/// 4-digit PIN entry styled like arcade coin slot display.
+/// GSF FIGHTER — Connection Code Input (Oscilloscope Design)
+/// 4-digit code entry with cyan accent.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -35,42 +35,30 @@ class _ConnectionCodeInputState extends State<ConnectionCodeInput> {
     if (value.length == 1 && index < 3) {
       _focusNodes[index + 1].requestFocus();
     }
-
-    // Check if all digits entered
     final code = _controllers.map((c) => c.text).join();
     if (code.length == 4) {
       widget.onCodeEntered?.call(code);
     }
+    setState(() {});
   }
-
-  String get currentCode => _controllers.map((c) => c.text).join();
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(4, (i) {
+        final filled = _controllers[i].text.isNotEmpty;
         return Container(
-          width: 56,
-          height: 72,
-          margin: const EdgeInsets.symmetric(horizontal: 6),
+          width: 52,
+          height: 64,
+          margin: const EdgeInsets.symmetric(horizontal: 5),
           decoration: BoxDecoration(
-            color: GSFColors.black,
-            borderRadius: BorderRadius.circular(8),
+            color: GSFColors.backgroundDeep,
+            borderRadius: BorderRadius.zero,
             border: Border.all(
-              color: _controllers[i].text.isNotEmpty
-                  ? GSFColors.yellow
-                  : GSFColors.lightGrey,
-              width: 2,
+              color: filled ? GSFColors.accentCyan : GSFColors.borderSubtle,
+              width: 1,
             ),
-            boxShadow: [
-              if (_controllers[i].text.isNotEmpty)
-                const BoxShadow(
-                  color: GSFColors.yellowGlow,
-                  blurRadius: 8,
-                  spreadRadius: 1,
-                ),
-            ],
           ),
           child: TextField(
             controller: _controllers[i],
@@ -79,9 +67,10 @@ class _ConnectionCodeInputState extends State<ConnectionCodeInput> {
             keyboardType: TextInputType.number,
             maxLength: 1,
             style: const TextStyle(
-              color: GSFColors.yellow,
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
+              fontFamily: kOscMonoFont,
+              color: GSFColors.accentCyan,
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
             ),
             decoration: const InputDecoration(
               counterText: '',

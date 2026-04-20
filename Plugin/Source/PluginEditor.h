@@ -1,20 +1,18 @@
 /*
   ==============================================================================
-   GSF FIGHTER - Plugin Editor
-   Main plugin UI: Street Fighter arcade aesthetic.
-   Layout:
-     ┌────────────────────────────────────┐
-     │       GSF FIGHTER (logo)           │
-     ├──────────────┬─────────────────────┤
-     │  CONNECTION  │   PRESET SELECT     │
-     │   PANEL      │   (Fighter Grid)    │
-     │  Code: 1234  │                     │
-     │  [FIGHT!]    │                     │
-     │  ═══ L ═══   │                     │
-     │  ═══ R ═══   │                     │
-     ├──────────────┴─────────────────────┤
-     │         SCANLINES + STATUS         │
-     └────────────────────────────────────┘
+   GSF FIGHTER — Plugin Editor (Oscilloscope Design)
+   Layout (900x500):
+     ┌─────────────────────────────────────────────┐
+     │          HEADER (44px)                      │
+     ├──────────┬──────────────────────────────────┤
+     │          │  DEVICE STATUS   STREAM QUALITY  │
+     │ SIDEBAR  ├──────────────────────────────────┤
+     │ (200px)  │        VU METERS L/R             │
+     │          ├──────────────────────────────────┤
+     │          │  PORT │ BUFFER │ DROPOUTS        │
+     ├──────────┴──────────────────────────────────┤
+     │          BOTTOM NAV (44px)                  │
+     └─────────────────────────────────────────────┘
   ==============================================================================
 */
 
@@ -40,28 +38,25 @@ public:
 private:
     GSFFighterProcessor& processorRef;
 
-    // Look & Feel
-    gsf::ui::GSFLookAndFeel arcadeLookAndFeel;
+    gsf::ui::GSFLookAndFeel oscLookAndFeel;
 
-    // UI Panels
-    gsf::ui::ConnectionPanel connectionPanel;
-    gsf::ui::PresetPanel     presetPanel;
-    gsf::ui::FightScreen     fightScreen;
-
-    // Status bar
-    juce::Label statusLabel;
+    // Main content panels
+    gsf::ui::ConnectionPanel inputMatrixPanel;
+    gsf::ui::PresetPanel     sidebarPanel;
+    gsf::ui::FightScreen     overlayScreen;
 
     // Animation
-    float logoGlowPhase = 0.0f;
-    int scanlineOffset = 0;
+    float wifiPhase = 0.0f;
 
     // Drawing helpers
-    void drawLogo(juce::Graphics& g, juce::Rectangle<int> bounds);
-    void drawBackground(juce::Graphics& g, juce::Rectangle<int> bounds);
-    void drawStatusBar(juce::Graphics& g, juce::Rectangle<int> bounds);
+    void drawHeader(juce::Graphics& g, juce::Rectangle<int> bounds);
+    void drawBottomNav(juce::Graphics& g, juce::Rectangle<int> bounds);
 
-    static constexpr int kPluginWidth  = 700;
-    static constexpr int kPluginHeight = 520;
+    static constexpr int kPluginWidth   = 900;
+    static constexpr int kPluginHeight  = 500;
+    static constexpr int kHeaderHeight  = 44;
+    static constexpr int kSidebarWidth  = 200;
+    static constexpr int kFooterHeight  = 44;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GSFFighterEditor)
 };

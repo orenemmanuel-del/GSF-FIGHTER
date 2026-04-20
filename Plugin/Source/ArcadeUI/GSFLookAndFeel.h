@@ -1,8 +1,8 @@
 /*
   ==============================================================================
-   GSF FIGHTER - Arcade Look & Feel
-   Street Fighter inspired dark arcade aesthetic.
-   Palette: blood red, electric blue, neon yellow, matte black (Gesaffelstein).
+   GSF FIGHTER — Carbon Look & Feel
+   IBM Carbon-inspired dark monitoring aesthetic.
+   Palette: Gray 100 dark theme, Blue 40 interactive, Red 50 clip.
   ==============================================================================
 */
 
@@ -13,35 +13,48 @@
 namespace gsf::ui
 {
 
-// Colour palette
 namespace Colours
 {
-    const juce::Colour Black       { 0xFF0A0A0A };  // Gesaffelstein matte black
-    const juce::Colour DarkGrey    { 0xFF1A1A1A };
-    const juce::Colour MidGrey     { 0xFF2A2A2A };
-    const juce::Colour LightGrey   { 0xFF444444 };
+    // Backgrounds (Carbon Gray 100 dark theme)
+    const juce::Colour Black            { 0xFF161616 }; // Gray 100
+    const juce::Colour DarkGrey         { 0xFF262626 }; // Gray 90
+    const juce::Colour MidGrey          { 0xFF393939 }; // Gray 80
+    const juce::Colour LightGrey        { 0xFF4C4C4C }; // Gray 70 (hover)
 
-    const juce::Colour Red         { 0xFFFF1E1E };  // Blood red (Ryu's headband)
-    const juce::Colour RedDark     { 0xFF8B0000 };
-    const juce::Colour RedGlow     { 0x60FF1E1E };
+    // Interactive — Blue
+    const juce::Colour Cyan             { 0xFF78A9FF }; // Blue 40 (dark theme)
+    const juce::Colour CyanDim          { 0xFF4589FF }; // Blue 50
+    const juce::Colour CyanGlow         { 0x2278A9FF };
 
-    const juce::Colour Blue        { 0xFF00C8FF };  // Electric blue (Chun-Li)
-    const juce::Colour BlueDark    { 0xFF0066AA };
-    const juce::Colour BlueGlow    { 0x6000C8FF };
+    // Red (clip / error)
+    const juce::Colour Red              { 0xFFFA4D56 }; // Red 50
+    const juce::Colour RedDark          { 0xFF620000 }; // Red 90
+    const juce::Colour RedGlow          { 0x40FA4D56 };
 
-    const juce::Colour Yellow      { 0xFFFFE500 };  // Neon yellow (KO flash)
-    const juce::Colour YellowGlow  { 0x60FFE500 };
+    // Text
+    const juce::Colour White            { 0xFFF4F4F4 }; // Gray 10
+    const juce::Colour TextSecondary    { 0xFFC6C6C6 }; // Gray 30
+    const juce::Colour TextDim          { 0xFF6F6F6F }; // Gray 60
 
-    const juce::Colour Green       { 0xFF00FF66 };  // Health bar
-    const juce::Colour GreenDark   { 0xFF00AA44 };
+    // Borders
+    const juce::Colour BorderSubtle     { 0xFF393939 }; // Gray 80
 
-    const juce::Colour Orange      { 0xFFFF6600 };  // Warning
-    const juce::Colour Purple      { 0xFF8800FF };  // Hadouken purple
+    // Support
+    const juce::Colour Success          { 0xFF42BE65 }; // Green 40
+    const juce::Colour Warning          { 0xFFF1C21B }; // Yellow 30
 
-    const juce::Colour White       { 0xFFEEEEEE };
-    const juce::Colour TextDim     { 0xFF888888 };
+    // Legacy aliases
+    const juce::Colour Blue             = Cyan;
+    const juce::Colour BlueDark         = CyanDim;
+    const juce::Colour BlueGlow         = CyanGlow;
+    const juce::Colour Yellow           = Warning;
+    const juce::Colour YellowGlow       = CyanGlow;
+    const juce::Colour Green            = Success;
+    const juce::Colour GreenDark        { 0xFF24A148 };
+    const juce::Colour Orange           = Red;
+    const juce::Colour Purple           = Cyan;
 
-    const juce::Colour ScanlineOverlay { 0x08FFFFFF }; // Subtle CRT scanline
+    const juce::Colour ScanlineOverlay  { 0x00FFFFFF }; // disabled
 }
 
 class GSFLookAndFeel : public juce::LookAndFeel_V4
@@ -50,11 +63,8 @@ public:
     GSFLookAndFeel();
     ~GSFLookAndFeel() override = default;
 
-    // Font
-    juce::Font getArcadeFont(float height) const;
-    juce::Font getTitleFont(float height) const;
+    juce::Font getMonoFont(float height, bool bold = false) const;
 
-    // LookAndFeel overrides
     void drawButtonBackground(juce::Graphics&, juce::Button&,
                               const juce::Colour& backgroundColour,
                               bool shouldDrawButtonAsHighlighted,
@@ -70,17 +80,13 @@ public:
                       bool isButtonDown, int, int, int, int,
                       juce::ComboBox&) override;
 
-    // Utility: draw glow effect
     static void drawGlow(juce::Graphics& g, juce::Rectangle<float> bounds,
-                          juce::Colour colour, float radius = 8.0f);
-
-    // Utility: draw scanlines over area
-    static void drawScanlines(juce::Graphics& g, juce::Rectangle<int> area,
-                               float opacity = 0.03f);
-
-    // Utility: draw pixel border (arcade style)
+                         juce::Colour colour, float radius = 6.0f);
+    static void drawScanlines(juce::Graphics&, juce::Rectangle<int>, float) {}
     static void drawArcadeBorder(juce::Graphics& g, juce::Rectangle<int> bounds,
-                                  juce::Colour colour, int thickness = 2);
+                                 juce::Colour colour, int thickness = 1);
+    static void drawWifiIcon(juce::Graphics& g, juce::Rectangle<float> bounds,
+                             juce::Colour colour, float pulsePhase);
 
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GSFLookAndFeel)

@@ -1,7 +1,7 @@
 /*
   ==============================================================================
-   GSF FIGHTER - Preset Panel
-   Select translation presets with fighter-style character selection UI.
+   GSF FIGHTER — Sidebar Navigation Panel (Oscilloscope Design)
+   Left sidebar: ENGINE ALPHA block + 5 navigation items.
   ==============================================================================
 */
 
@@ -9,7 +9,6 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "GSFLookAndFeel.h"
-#include "ArcadeButton.h"
 #include "GSFProtocol.h"
 
 namespace gsf::ui
@@ -23,6 +22,9 @@ public:
 
     void paint(juce::Graphics& g) override;
     void resized() override;
+    void mouseMove(const juce::MouseEvent&) override;
+    void mouseExit(const juce::MouseEvent&) override;
+    void mouseDown(const juce::MouseEvent&) override;
 
     void setActivePreset(gsf::PresetID preset);
     gsf::PresetID getActivePreset() const { return activePreset; }
@@ -30,25 +32,25 @@ public:
     std::function<void(gsf::PresetID)> onPresetChanged;
 
 private:
-    gsf::PresetID activePreset = gsf::PresetID::Flat;
-
-    struct PresetSlot
+    struct NavItem
     {
-        gsf::PresetID id;
-        juce::String  name;
-        juce::String  shortName;   // Fighter name
-        juce::Colour  colour;
-        juce::String  silhouette;  // Character identifier
+        juce::String label;
+        gsf::PresetID associatedPreset;
     };
 
-    std::array<PresetSlot, 7> presetSlots;
-    std::array<std::unique_ptr<ArcadeButton>, 7> presetButtons;
+    std::array<NavItem, 5> navItems;
 
-    void updateButtonStates();
+    gsf::PresetID activePreset = gsf::PresetID::Flat;
+    int selectedIndex = 0;
+    int hoverIndex    = -1;
 
-    // Character silhouette drawing
-    void drawFighterSilhouette(juce::Graphics& g, juce::Rectangle<int> bounds,
-                                int presetIndex, bool isActive);
+    juce::Rectangle<int> headerArea;
+    std::array<juce::Rectangle<int>, 5> itemBounds;
+
+    void drawHeader(juce::Graphics& g);
+    void drawNavItem(juce::Graphics& g, int index);
+    void drawNavIcon(juce::Graphics& g, juce::Rectangle<int> area,
+                     int index, juce::Colour colour);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PresetPanel)
 };

@@ -1,12 +1,11 @@
-/// GSF FIGHTER - Preset Select Screen
-/// "SELECT YOUR FIGHTER" character grid with arcade styling.
+/// GSF FIGHTER — Settings / Preset Screen (Oscilloscope Design)
+/// System status + audio processing (buffer, preset), persistence, about.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_state.dart';
 import '../../core/gsf_protocol.dart';
 import '../theme/gsf_theme.dart';
-import '../widgets/scanline_overlay.dart';
 
 class PresetSelectScreen extends StatefulWidget {
   const PresetSelectScreen({super.key});
@@ -15,247 +14,471 @@ class PresetSelectScreen extends StatefulWidget {
   State<PresetSelectScreen> createState() => _PresetSelectScreenState();
 }
 
-class _PresetSelectScreenState extends State<PresetSelectScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _titleController;
+class _PresetSelectScreenState extends State<PresetSelectScreen> {
+  int _bufferIndex = 1; // 0=LOW, 1=STANDARD, 2=HIGH
+  bool _stayAwake = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _titleController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    )..forward();
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    super.dispose();
-  }
-
-  static const _presetData = <PresetID, _PresetInfo>{
-    PresetID.flat: _PresetInfo('BYPASS', 'X', GSFColors.lightGrey, 'No processing'),
-    PresetID.iPhoneSpeaker: _PresetInfo('RYU', 'R', GSFColors.blue, 'iPhone Speaker simulation'),
-    PresetID.airPodsPro: _PresetInfo('CHUN-LI', 'C', GSFColors.purple, 'AirPods Pro simulation'),
-    PresetID.voiture: _PresetInfo('GUILE', 'G', GSFColors.green, 'Car system simulation'),
-    PresetID.clubSystem: _PresetInfo('AKUMA', 'A', GSFColors.red, 'Club PA system simulation'),
-    PresetID.cheapEarbuds: _PresetInfo('BLANKA', 'B', GSFColors.yellow, 'Cheap earbuds simulation'),
-    PresetID.studioMonitors: _PresetInfo('SAGAT', 'S', GSFColors.orange, 'Studio monitors simulation'),
-  };
+  static const _bufferLabels = ['LOW', 'STANDARD', 'HIGH'];
+  static const _bufferNotes = [
+    'Lowest latency — may cause dropouts on weaker networks.',
+    'Balanced latency and stability. Recommended for most setups.',
+    'Maximum stability — higher latency on the phone side.',
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
+      backgroundColor: GSFColors.backgroundDeep,
+      body: SafeArea(
+        child: Consumer<GSFAppState>(
+          builder: (context, appState, _) {
+            return Column(
+              children: [
+                _buildAppBar(),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+                    children: [
+                      _buildSystemStatus(),
+                      const SizedBox(height: 24),
+                      _buildAudioProcessing(),
+                      const SizedBox(height: 24),
+                      _buildPresetSelector(appState),
+                      const SizedBox(height: 24),
+                      _buildPersistence(),
+                      const SizedBox(height: 24),
+                      _buildAbout(),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppBar() {
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: const BoxDecoration(
+        color: GSFColors.backgroundPanel,
+        border: Border(
+          bottom: BorderSide(color: GSFColors.borderSubtle, width: 1),
+        ),
+      ),
+      child: Row(
         children: [
-          Container(decoration: const BoxDecoration(gradient: GSFColors.backgroundGradient)),
-
-          SafeArea(
-            child: Consumer<GSFAppState>(
-              builder: (context, appState, _) {
-                return Column(
-                  children: [
-                    const SizedBox(height: 16),
-
-                    // Back button
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.arrow_back, color: GSFColors.yellow),
-                      ),
-                    ),
-
-                    // Title
-                    FadeTransition(
-                      opacity: _titleController,
-                      child: ScaleTransition(
-                        scale: Tween<double>(begin: 1.5, end: 1.0).animate(
-                          CurvedAnimation(
-                            parent: _titleController,
-                            curve: Curves.elasticOut,
-                          ),
-                        ),
-                        child: Text(
-                          'SELECT YOUR\nFIGHTER',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: GSFColors.yellow,
-                            fontSize: 32,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 4,
-                            height: 1.2,
-                            shadows: [
-                              Shadow(
-                                color: GSFColors.yellow.withValues(alpha: 0.5),
-                                blurRadius: 20,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Fighter grid
-                    Expanded(
-                      child: GridView.count(
-                        crossAxisCount: 2,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 1.1,
-                        children: PresetID.values.map((preset) {
-                          final info = _presetData[preset]!;
-                          final isActive = appState.currentPreset == preset;
-                          return _buildFighterCard(
-                            preset, info, isActive, appState,
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                );
-              },
+          IconButton(
+            icon: const Icon(Icons.arrow_back, color: GSFColors.accentCyan),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          const SizedBox(width: 4),
+          const Text(
+            'OSCILLOSCOPE',
+            style: TextStyle(
+              fontFamily: kOscMonoFont,
+              color: GSFColors.accentCyan,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 3,
             ),
           ),
-
-          const ScanlineOverlay(),
+          const Spacer(),
+          const Text(
+            'SETTINGS',
+            style: TextStyle(
+              fontFamily: kOscMonoFont,
+              color: GSFColors.textDim,
+              fontSize: 10,
+              letterSpacing: 2,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildFighterCard(
-    PresetID preset,
-    _PresetInfo info,
-    bool isActive,
-    GSFAppState appState,
-  ) {
-    return GestureDetector(
-      onTap: () {
-        appState.setPreset(preset);
-        // Pop after brief delay for feedback
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) Navigator.of(context).pop();
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: isActive
-              ? info.color.withValues(alpha: 0.15)
-              : GSFColors.darkGrey,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isActive ? info.color : GSFColors.lightGrey,
-            width: isActive ? 2.5 : 1,
-          ),
-          boxShadow: [
-            if (isActive)
-              BoxShadow(
-                color: info.color.withValues(alpha: 0.3),
-                blurRadius: 16,
-                spreadRadius: 2,
-              ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Fighter initial / silhouette
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: info.color.withValues(alpha: isActive ? 0.3 : 0.1),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: info.color.withValues(alpha: isActive ? 0.8 : 0.3),
-                  width: 2,
-                ),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                info.initial,
-                style: TextStyle(
-                  color: isActive ? info.color : info.color.withValues(alpha: 0.5),
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
+  // --- SECTIONS ---
 
-            // Fighter name
-            Text(
-              info.name,
-              style: TextStyle(
-                color: isActive ? info.color : GSFColors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 2,
-              ),
-            ),
-            const SizedBox(height: 4),
-
-            // Preset display name
-            Text(
-              preset.displayName,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: isActive
-                    ? GSFColors.white.withValues(alpha: 0.8)
-                    : GSFColors.textDim,
-                fontSize: 8,
-              ),
-            ),
-            const SizedBox(height: 4),
-
-            // Description
-            Text(
-              info.description,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: GSFColors.textDim,
-                fontSize: 9,
-              ),
-            ),
-
-            // Active indicator
-            if (isActive) ...[
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: info.color,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  'ACTIVE',
-                  style: TextStyle(
-                    color: GSFColors.black,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                  ),
-                ),
-              ),
-            ],
-          ],
+  Widget _sectionLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10, left: 2),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontFamily: kOscMonoFont,
+          color: GSFColors.textDim,
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 2,
         ),
       ),
     );
   }
-}
 
-class _PresetInfo {
-  final String name;
-  final String initial;
-  final Color color;
-  final String description;
+  Widget _card({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: GSFColors.backgroundCard,
+        borderRadius: BorderRadius.zero,
+        border: Border.all(color: GSFColors.borderSubtle, width: 1),
+      ),
+      child: child,
+    );
+  }
 
-  const _PresetInfo(this.name, this.initial, this.color, this.description);
+  Widget _buildSystemStatus() {
+    return _card(
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: GSFColors.accentCyan.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.zero,
+              border: Border.all(color: GSFColors.accentCyan, width: 1),
+            ),
+            child: const Icon(Icons.settings,
+                color: GSFColors.accentCyan, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'ENGINE ALPHA',
+                  style: TextStyle(
+                    fontFamily: kOscMonoFont,
+                    color: GSFColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  '48KHZ / 24-BIT / ACTIVE',
+                  style: TextStyle(
+                    fontFamily: kOscMonoFont,
+                    color: GSFColors.accentCyan,
+                    fontSize: 9,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Text(
+            'V 2.4.0',
+            style: TextStyle(
+              fontFamily: kOscMonoFont,
+              color: GSFColors.textDim,
+              fontSize: 9,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAudioProcessing() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel('AUDIO PROCESSING'),
+        _card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Buffer Size',
+                      style: TextStyle(
+                        fontFamily: kOscMonoFont,
+                        color: GSFColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    _bufferIndex == 0
+                        ? '32 samples'
+                        : _bufferIndex == 1
+                            ? '64 samples'
+                            : '128 samples',
+                    style: const TextStyle(
+                      fontFamily: kOscMonoFont,
+                      color: GSFColors.accentCyan,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: List.generate(3, (i) {
+                  final selected = _bufferIndex == i;
+                  return Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(right: i < 2 ? 8 : 0),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _bufferIndex = i),
+                        child: Container(
+                          height: 36,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? GSFColors.accentCyan
+                                : GSFColors.backgroundCard,
+                            borderRadius: BorderRadius.zero,
+                            border: Border.all(
+                              color: selected
+                                  ? GSFColors.accentCyan
+                                  : GSFColors.borderSubtle,
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            _bufferLabels[i],
+                            style: TextStyle(
+                              fontFamily: kOscMonoFont,
+                              color: selected
+                                  ? GSFColors.backgroundDeep
+                                  : GSFColors.textDim,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                _bufferNotes[_bufferIndex],
+                style: const TextStyle(
+                  fontFamily: kOscMonoFont,
+                  color: GSFColors.textDim,
+                  fontSize: 9,
+                  fontStyle: FontStyle.italic,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPresetSelector(GSFAppState appState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel('TRANSLATION PRESET'),
+        _card(
+          child: Column(
+            children: PresetID.values.map((preset) {
+              final selected = appState.currentPreset == preset;
+              return GestureDetector(
+                onTap: () {
+                  appState.setPreset(preset);
+                  setState(() {});
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    border: preset == PresetID.values.last
+                        ? null
+                        : const Border(
+                            bottom: BorderSide(
+                              color: GSFColors.borderSubtle,
+                              width: 1,
+                            ),
+                          ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: selected
+                              ? GSFColors.accentCyan
+                              : Colors.transparent,
+                          border: Border.all(
+                            color: selected
+                                ? GSFColors.accentCyan
+                                : GSFColors.textDim,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          preset.displayName,
+                          style: TextStyle(
+                            fontFamily: kOscMonoFont,
+                            color: selected
+                                ? GSFColors.textPrimary
+                                : GSFColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: selected
+                                ? FontWeight.w700
+                                : FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                      if (selected)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: GSFColors.accentCyan,
+                            borderRadius: BorderRadius.zero,
+                          ),
+                          child: const Text(
+                            'ACTIVE',
+                            style: TextStyle(
+                              fontFamily: kOscMonoFont,
+                              color: GSFColors.backgroundDeep,
+                              fontSize: 8,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPersistence() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel('SYSTEM PERSISTENCE'),
+        _card(
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Stay Awake',
+                  style: TextStyle(
+                    fontFamily: kOscMonoFont,
+                    color: GSFColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Switch(
+                value: _stayAwake,
+                onChanged: (v) => setState(() => _stayAwake = v),
+                activeThumbColor: GSFColors.accentCyan,
+                activeTrackColor: GSFColors.accentCyan.withValues(alpha: 0.3),
+                inactiveThumbColor: GSFColors.textDim,
+                inactiveTrackColor: GSFColors.backgroundHover,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAbout() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel('ABOUT OSCILLOSCOPE'),
+        _card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Handcrafted in Berlin',
+                style: TextStyle(
+                  fontFamily: kOscMonoFont,
+                  color: GSFColors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'A precision monitoring tool for master-bus translation checks on mobile devices.',
+                style: TextStyle(
+                  fontFamily: kOscMonoFont,
+                  color: GSFColors.textDim,
+                  fontSize: 11,
+                  height: 1.55,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(child: _aboutButton('LICENSES', Icons.description_outlined)),
+                  const SizedBox(width: 10),
+                  Expanded(child: _aboutButton('SUPPORT', Icons.help_outline)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _aboutButton(String label, IconData icon) {
+    return Container(
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: GSFColors.backgroundCard,
+        borderRadius: BorderRadius.zero,
+        border: Border.all(color: GSFColors.borderSubtle, width: 1),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: GSFColors.textSecondary, size: 14),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: kOscMonoFont,
+              color: GSFColors.textSecondary,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

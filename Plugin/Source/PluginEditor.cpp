@@ -1,6 +1,6 @@
 /*
   ==============================================================================
-   GSF FIGHTER - Plugin Editor Implementation
+   GSF FIGHTER — Plugin Editor (Oscilloscope Design)
   ==============================================================================
 */
 
@@ -8,56 +8,50 @@
 #include "Network/DeviceDiscovery.h"
 #include <cmath>
 
+using namespace gsf::ui;
+
 GSFFighterEditor::GSFFighterEditor(GSFFighterProcessor& p)
     : AudioProcessorEditor(&p), processorRef(p)
 {
-    setLookAndFeel(&arcadeLookAndFeel);
+    setLookAndFeel(&oscLookAndFeel);
+    setResizable(true, true);
+    setResizeLimits(800, 450, 1000, 560);
     setSize(kPluginWidth, kPluginHeight);
 
-    // Connection panel
-    addAndMakeVisible(connectionPanel);
-    connectionPanel.setConnectionCode(processorRef.getConnectionCode());
-    connectionPanel.setIPAddress(DeviceDiscovery::getLocalIPAddress());
-    connectionPanel.setStreaming(processorRef.isStreaming());
+    addAndMakeVisible(inputMatrixPanel);
+    inputMatrixPanel.setConnectionCode(processorRef.getConnectionCode());
+    inputMatrixPanel.setIPAddress(DeviceDiscovery::getLocalIPAddress());
+    inputMatrixPanel.setStreaming(processorRef.isStreaming());
 
-    connectionPanel.onStartStop = [this]()
+    inputMatrixPanel.onStartStop = [this]()
     {
         bool shouldStream = !processorRef.isStreaming();
         processorRef.setStreaming(shouldStream);
-        connectionPanel.setStreaming(shouldStream);
+        inputMatrixPanel.setStreaming(shouldStream);
 
         if (shouldStream)
-            fightScreen.triggerFightSequence();
+            overlayScreen.triggerFightSequence();
         else
-            fightScreen.triggerKOSequence();
+            overlayScreen.triggerKOSequence();
     };
 
-    connectionPanel.onRegenCode = [this]()
+    inputMatrixPanel.onRegenCode = [this]()
     {
         processorRef.regenerateConnectionCode();
-        connectionPanel.setConnectionCode(processorRef.getConnectionCode());
+        inputMatrixPanel.setConnectionCode(processorRef.getConnectionCode());
     };
 
-    // Preset panel
-    addAndMakeVisible(presetPanel);
-    presetPanel.setActivePreset(processorRef.getTranslationEngine().getCurrentPreset());
-
-    presetPanel.onPresetChanged = [this](gsf::PresetID preset)
+    addAndMakeVisible(sidebarPanel);
+    sidebarPanel.setActivePreset(processorRef.getTranslationEngine().getCurrentPreset());
+    sidebarPanel.onPresetChanged = [this](gsf::PresetID preset)
     {
         processorRef.getTranslationEngine().setPreset(preset);
     };
 
-    // Fight screen overlay (on top)
-    addAndMakeVisible(fightScreen);
-    fightScreen.setVisible(false);
+    addChildComponent(overlayScreen);
+    overlayScreen.setVisible(false);
 
-    // Status label
-    addAndMakeVisible(statusLabel);
-    statusLabel.setColour(juce::Label::textColourId, gsf::ui::Colours::TextDim);
-    statusLabel.setJustificationType(juce::Justification::centred);
-
-    // Start UI timer
-    startTimerHz(30);
+    startTimerHz(60);
 }
 
 GSFFighterEditor::~GSFFighterEditor()
@@ -67,36 +61,12 @@ GSFFighterEditor::~GSFFighterEditor()
 
 void GSFFighterEditor::timerCallback()
 {
-    // Update metering
-    connectionPanel.setLevels(
+    inputMatrixPanel.setLevels(
         processorRef.getPeakLevel(0), processorRef.getPeakLevel(1),
         processorRef.getRmsLevel(0),  processorRef.getRmsLevel(1));
+    inputMatrixPanel.setClientCount(processorRef.getConnectedClientCount());
 
-    // Update client count
-    connectionPanel.setClientCount(processorRef.getConnectedClientCount());
-
-    // Animation
-    logoGlowPhase += 0.06f;
-    scanlineOffset = (scanlineOffset + 1) % 3;
-
-    // Status text
-    if (processorRef.isStreaming())
-    {
-        int clients = processorRef.getConnectedClientCount();
-        auto presetName = gsf::presetName(processorRef.getTranslationEngine().getCurrentPreset());
-        statusLabel.setText(
-            juce::String("STREAMING // ") + juce::String(clients) + " CLIENT"
-            + (clients != 1 ? "S" : "") + " // " + presetName,
-            juce::dontSendNotification);
-        statusLabel.setColour(juce::Label::textColourId, gsf::ui::Colours::Green);
-    }
-    else
-    {
-        statusLabel.setText("INSERT ON MASTER BUS // PRESS FIGHT! TO START",
-                            juce::dontSendNotification);
-        statusLabel.setColour(juce::Label::textColourId, gsf::ui::Colours::TextDim);
-    }
-
+    wifiPhase += 0.08f;
     repaint();
 }
 
@@ -104,152 +74,175 @@ void GSFFighterEditor::paint(juce::Graphics& g)
 {
     auto bounds = getLocalBounds();
 
-    // Background
-    drawBackground(g, bounds);
+    // Background deep
+    g.fillAll(Colours::Black);
 
-    // Logo header
-    auto logoArea = bounds.removeFromTop(70);
-    drawLogo(g, logoArea);
+    // Header
+    auto header = bounds.removeFromTop(kHeaderHeight);
+    drawHeader(g, header);
 
-    // Status bar at bottom
-    auto statusArea = bounds.removeFromBottom(28);
-    drawStatusBar(g, statusArea);
+    // Footer
+    auto footer = bounds.removeFromBottom(kFooterHeight);
+    drawBottomNav(g, footer);
 
-    // Scanlines over everything
-    gsf::ui::GSFLookAndFeel::drawScanlines(g, getLocalBounds(), 0.02f);
+    // Sidebar background
+    auto sidebarArea = bounds.withWidth(kSidebarWidth);
+    g.setColour(Colours::DarkGrey);
+    g.fillRect(sidebarArea);
+    g.setColour(Colours::BorderSubtle);
+    g.drawVerticalLine(sidebarArea.getRight() - 1,
+                       (float) sidebarArea.getY(),
+                       (float) sidebarArea.getBottom());
 }
 
 void GSFFighterEditor::resized()
 {
     auto bounds = getLocalBounds();
+    bounds.removeFromTop(kHeaderHeight);
+    bounds.removeFromBottom(kFooterHeight);
 
-    // Logo header
-    bounds.removeFromTop(70);
+    auto sidebarArea = bounds.removeFromLeft(kSidebarWidth);
+    sidebarPanel.setBounds(sidebarArea);
 
-    // Status bar
-    auto statusArea = bounds.removeFromBottom(28);
-    statusLabel.setBounds(statusArea.reduced(8, 2));
+    inputMatrixPanel.setBounds(bounds.reduced(20, 16));
 
-    // Main content area
-    auto content = bounds.reduced(6, 4);
-
-    // Left: Connection panel (40%)
-    auto leftPanel = content.removeFromLeft(content.getWidth() * 4 / 10);
-    connectionPanel.setBounds(leftPanel.reduced(2));
-
-    // Right: Preset panel (60%)
-    presetPanel.setBounds(content.reduced(2));
-
-    // Fight screen overlay (full size)
-    fightScreen.setBounds(getLocalBounds());
+    overlayScreen.setBounds(getLocalBounds());
 }
 
-void GSFFighterEditor::drawBackground(juce::Graphics& g, juce::Rectangle<int> bounds)
+void GSFFighterEditor::drawHeader(juce::Graphics& g, juce::Rectangle<int> bounds)
 {
-    // Dark industrial gradient
-    g.setGradientFill(juce::ColourGradient(
-        gsf::ui::Colours::Black, bounds.getCentreX(), bounds.getY(),
-        gsf::ui::Colours::DarkGrey.darker(0.5f), bounds.getCentreX(), bounds.getBottom(),
-        false));
+    // Panel background
+    g.setColour(Colours::DarkGrey);
     g.fillRect(bounds);
 
-    // Subtle grid pattern (industrial / arcade PCB)
-    g.setColour(gsf::ui::Colours::MidGrey.withAlpha(0.06f));
-    for (int x = bounds.getX(); x < bounds.getRight(); x += 20)
-        g.drawVerticalLine(x, static_cast<float>(bounds.getY()), static_cast<float>(bounds.getBottom()));
-    for (int y = bounds.getY(); y < bounds.getBottom(); y += 20)
-        g.drawHorizontalLine(y, static_cast<float>(bounds.getX()), static_cast<float>(bounds.getRight()));
+    // Bottom border
+    g.setColour(Colours::BorderSubtle);
+    g.drawHorizontalLine(bounds.getBottom() - 1,
+                         (float) bounds.getX(),
+                         (float) bounds.getRight());
 
-    // Corner decorations (arcade cabinet bolts)
-    float boltSize = 8.0f;
-    auto drawBolt = [&](float x, float y)
+    auto content = bounds.reduced(16, 0);
+
+    // --- Left: icon + OSCILLOSCOPE title ---
+    auto leftArea = content.removeFromLeft(260);
+    auto iconArea = leftArea.removeFromLeft(28).withSizeKeepingCentre(14, 20);
+
+    // Draw "|||" icon (3 vertical bars) in cyan
+    g.setColour(Colours::Cyan);
+    int barW = 3, gap = 2;
+    for (int i = 0; i < 3; ++i)
     {
-        g.setColour(gsf::ui::Colours::LightGrey.withAlpha(0.3f));
-        g.fillEllipse(x - boltSize / 2, y - boltSize / 2, boltSize, boltSize);
-        g.setColour(gsf::ui::Colours::Black);
-        g.drawEllipse(x - boltSize / 2, y - boltSize / 2, boltSize, boltSize, 1.0f);
-        // Cross slot
-        g.drawLine(x - 2, y, x + 2, y, 1.0f);
-        g.drawLine(x, y - 2, x, y + 2, 1.0f);
+        int x = iconArea.getX() + i * (barW + gap);
+        g.fillRect(juce::Rectangle<int>(x, iconArea.getY() + 2,
+                                        barW, iconArea.getHeight() - 4));
+    }
+
+    leftArea.removeFromLeft(8);
+    g.setColour(Colours::White);
+    g.setFont(oscLookAndFeel.getMonoFont(13.0f, true));
+    g.drawFittedText("OSCILLOSCOPE", leftArea, juce::Justification::centredLeft, 1);
+
+    // --- Right: version + label + wifi ---
+    auto rightArea = content;
+    auto wifiZone  = rightArea.removeFromRight(28);
+
+    g.setColour(Colours::TextSecondary);
+    g.setFont(oscLookAndFeel.getMonoFont(10.0f));
+    rightArea.removeFromRight(12);
+
+    g.drawFittedText("PHONECHECK MONITOR",
+                     rightArea.removeFromRight(160),
+                     juce::Justification::centredRight, 1);
+    rightArea.removeFromRight(12);
+    g.drawFittedText("V 1.2.4",
+                     rightArea.removeFromRight(60),
+                     juce::Justification::centredRight, 1);
+
+    // Wifi icon (pulsing cyan when streaming)
+    auto wifiBounds = wifiZone.toFloat().withSizeKeepingCentre(22.0f, 22.0f);
+    auto wifiCol = processorRef.isStreaming()
+                       ? Colours::Cyan
+                       : Colours::TextDim;
+    GSFLookAndFeel::drawWifiIcon(g, wifiBounds, wifiCol,
+                                 processorRef.isStreaming() ? wifiPhase : 0.0f);
+}
+
+void GSFFighterEditor::drawBottomNav(juce::Graphics& g, juce::Rectangle<int> bounds)
+{
+    // Panel background
+    g.setColour(Colours::DarkGrey);
+    g.fillRect(bounds);
+
+    // Top border
+    g.setColour(Colours::BorderSubtle);
+    g.drawHorizontalLine(bounds.getY(),
+                         (float) bounds.getX(),
+                         (float) bounds.getRight());
+
+    // 4 icons evenly spaced
+    const int numIcons = 4;
+    const int cellW = bounds.getWidth() / numIcons;
+
+    auto drawBars = [&](juce::Rectangle<int> cell, juce::Colour col)
+    {
+        auto c = cell.withSizeKeepingCentre(18, 16);
+        g.setColour(col);
+        g.fillRect(juce::Rectangle<int>(c.getX(),       c.getBottom() - 6, 3, 6));
+        g.fillRect(juce::Rectangle<int>(c.getX() + 5,   c.getBottom() - 10, 3, 10));
+        g.fillRect(juce::Rectangle<int>(c.getX() + 10,  c.getBottom() - 14, 3, 14));
+        g.fillRect(juce::Rectangle<int>(c.getX() + 15,  c.getBottom() - 8, 3, 8));
     };
 
-    float margin = 12.0f;
-    drawBolt(bounds.getX() + margin, bounds.getY() + margin);
-    drawBolt(bounds.getRight() - margin, bounds.getY() + margin);
-    drawBolt(bounds.getX() + margin, bounds.getBottom() - margin);
-    drawBolt(bounds.getRight() - margin, bounds.getBottom() - margin);
-}
-
-void GSFFighterEditor::drawLogo(juce::Graphics& g, juce::Rectangle<int> bounds)
-{
-    // Background bar
-    g.setColour(gsf::ui::Colours::Black);
-    g.fillRect(bounds);
-
-    // Red accent line at bottom
-    g.setColour(gsf::ui::Colours::Red);
-    g.fillRect(bounds.getX(), bounds.getBottom() - 3, bounds.getWidth(), 3);
-
-    // Logo glow
-    float glowIntensity = 0.3f + 0.1f * std::sin(logoGlowPhase);
-    gsf::ui::GSFLookAndFeel::drawGlow(g, bounds.toFloat().reduced(4),
-                                       gsf::ui::Colours::Red.withAlpha(glowIntensity), 8.0f);
-
-    // Main title
-    auto titleArea = bounds.reduced(10, 5);
-
-    // "GSF" in red
-    g.setFont(juce::Font(juce::FontOptions(42.0f, juce::Font::bold)));
-    auto gsfArea = titleArea.removeFromLeft(120);
-
-    // Shadow
-    g.setColour(gsf::ui::Colours::Black);
-    g.drawFittedText("GSF", gsfArea.translated(2, 2), juce::Justification::centredRight, 1);
-
-    // Red text with yellow border effect
-    g.setColour(gsf::ui::Colours::Red);
-    g.drawFittedText("GSF", gsfArea, juce::Justification::centredRight, 1);
-
-    // "FIGHTER" in yellow
-    auto fighterArea = titleArea.removeFromLeft(220);
-    g.setFont(juce::Font(juce::FontOptions(42.0f, juce::Font::bold)));
-
-    g.setColour(gsf::ui::Colours::Black);
-    g.drawFittedText("FIGHTER", fighterArea.translated(2, 2), juce::Justification::centredLeft, 1);
-
-    g.setColour(gsf::ui::Colours::Yellow);
-    g.drawFittedText("FIGHTER", fighterArea, juce::Justification::centredLeft, 1);
-
-    // Subtitle / version
-    g.setFont(juce::Font(juce::FontOptions(11.0f, juce::Font::bold)));
-    g.setColour(gsf::ui::Colours::Blue);
-    g.drawFittedText("MASTER BUS STREAMING SYSTEM  v1.0",
-                     titleArea.reduced(4), juce::Justification::centredRight, 1);
-
-    // "x GESAFFELSTEIN" attribution
-    g.setFont(juce::Font(juce::FontOptions(9.0f, juce::Font::bold)));
-    g.setColour(gsf::ui::Colours::TextDim);
-    g.drawFittedText("x GESAFFELSTEIN",
-                     bounds.removeFromBottom(14).reduced(10, 0),
-                     juce::Justification::centredRight, 1);
-}
-
-void GSFFighterEditor::drawStatusBar(juce::Graphics& g, juce::Rectangle<int> bounds)
-{
-    // Dark bar
-    g.setColour(gsf::ui::Colours::Black.brighter(0.03f));
-    g.fillRect(bounds);
-
-    // Top accent line
-    g.setColour(gsf::ui::Colours::LightGrey.withAlpha(0.3f));
-    g.drawHorizontalLine(bounds.getY(), static_cast<float>(bounds.getX()),
-                         static_cast<float>(bounds.getRight()));
-
-    // Blinking dot for streaming
-    if (processorRef.isStreaming())
+    auto drawCurve = [&](juce::Rectangle<int> cell, juce::Colour col)
     {
-        float dotAlpha = 0.5f + 0.5f * std::sin(logoGlowPhase * 2.0f);
-        g.setColour(gsf::ui::Colours::Red.withAlpha(dotAlpha));
-        g.fillEllipse(bounds.getX() + 10.0f, bounds.getCentreY() - 4.0f, 8.0f, 8.0f);
-    }
+        auto c = cell.withSizeKeepingCentre(22, 16).toFloat();
+        juce::Path p;
+        p.startNewSubPath(c.getX(), c.getCentreY());
+        p.quadraticTo(c.getCentreX() - 4.0f, c.getY(),
+                      c.getCentreX(),        c.getCentreY());
+        p.quadraticTo(c.getCentreX() + 4.0f, c.getBottom(),
+                      c.getRight(),          c.getCentreY());
+        g.setColour(col);
+        g.strokePath(p, juce::PathStrokeType(1.5f));
+    };
+
+    auto drawGear = [&](juce::Rectangle<int> cell, juce::Colour col)
+    {
+        auto c = cell.withSizeKeepingCentre(18, 18).toFloat();
+        g.setColour(col);
+        g.drawEllipse(c, 1.5f);
+        g.fillEllipse(c.withSizeKeepingCentre(5.0f, 5.0f));
+        for (int i = 0; i < 6; ++i)
+        {
+            float a = (float) i * juce::MathConstants<float>::pi / 3.0f;
+            float x1 = c.getCentreX() + std::cos(a) * 7.0f;
+            float y1 = c.getCentreY() + std::sin(a) * 7.0f;
+            float x2 = c.getCentreX() + std::cos(a) * 10.0f;
+            float y2 = c.getCentreY() + std::sin(a) * 10.0f;
+            g.drawLine(x1, y1, x2, y2, 1.5f);
+        }
+    };
+
+    auto drawPower = [&](juce::Rectangle<int> cell, juce::Colour col)
+    {
+        auto c = cell.withSizeKeepingCentre(18, 18).toFloat();
+        g.setColour(col);
+        juce::Path arc;
+        arc.addCentredArc(c.getCentreX(), c.getCentreY(), 8.0f, 8.0f, 0.0f,
+                          -2.4f, 2.4f, true);
+        g.strokePath(arc, juce::PathStrokeType(1.5f));
+        g.drawLine(c.getCentreX(), c.getY() - 1.0f,
+                   c.getCentreX(), c.getCentreY() - 1.0f, 1.5f);
+    };
+
+    // First (meters) = active cyan
+    auto cell0 = juce::Rectangle<int>(bounds.getX(),           bounds.getY(), cellW, bounds.getHeight());
+    auto cell1 = juce::Rectangle<int>(bounds.getX() + cellW,   bounds.getY(), cellW, bounds.getHeight());
+    auto cell2 = juce::Rectangle<int>(bounds.getX() + cellW*2, bounds.getY(), cellW, bounds.getHeight());
+    auto cell3 = juce::Rectangle<int>(bounds.getX() + cellW*3, bounds.getY(), cellW, bounds.getHeight());
+
+    drawBars(cell0,  Colours::Cyan);
+    drawCurve(cell1, Colours::TextDim);
+    drawGear(cell2,  Colours::TextDim);
+    drawPower(cell3, Colours::TextDim);
 }

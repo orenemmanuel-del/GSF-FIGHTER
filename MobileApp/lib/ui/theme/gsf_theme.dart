@@ -1,142 +1,136 @@
-/// GSF FIGHTER - Arcade Theme
-/// Street Fighter inspired dark arcade aesthetic for Flutter.
-
 import 'package:flutter/material.dart';
 
 class GSFColors {
-  static const Color black = Color(0xFF0A0A0A);
-  static const Color darkGrey = Color(0xFF1A1A1A);
-  static const Color midGrey = Color(0xFF2A2A2A);
-  static const Color lightGrey = Color(0xFF444444);
+  // Carbon Gray 100 Dark Theme
+  static const Color backgroundDeep  = Color(0xFF161616);
+  static const Color backgroundPanel = Color(0xFF262626);
+  static const Color backgroundCard  = Color(0xFF393939);
+  static const Color backgroundHover = Color(0xFF4C4C4C);
 
-  static const Color red = Color(0xFFFF1E1E);
-  static const Color redDark = Color(0xFF8B0000);
-  static const Color redGlow = Color(0x60FF1E1E);
+  // Interactive — Blue
+  static const Color accentCyan    = Color(0xFF78A9FF); // Blue 40 (dark theme interactive)
+  static const Color accentCyanDim = Color(0xFF4589FF); // Blue 50
+  static const Color accentRed     = Color(0xFFFA4D56); // Red 50 (dark theme error)
+  static const Color accentRedDark = Color(0xFF620000); // Red 90
 
-  static const Color blue = Color(0xFF00C8FF);
-  static const Color blueDark = Color(0xFF0066AA);
-  static const Color blueGlow = Color(0x6000C8FF);
+  // Text
+  static const Color textPrimary   = Color(0xFFF4F4F4); // Gray 10
+  static const Color textSecondary = Color(0xFFC6C6C6); // Gray 30
+  static const Color textDim       = Color(0xFF6F6F6F); // Gray 60
 
-  static const Color yellow = Color(0xFFFFE500);
-  static const Color yellowGlow = Color(0x60FFE500);
+  // Borders
+  static const Color borderSubtle  = Color(0xFF393939); // Gray 80
+  static const Color borderAccent  = Color(0xFF0F62FE); // Blue 60
 
-  static const Color green = Color(0xFF00FF66);
-  static const Color greenDark = Color(0xFF00AA44);
+  // Support
+  static const Color supportSuccess = Color(0xFF42BE65); // Green 40
+  static const Color supportWarning = Color(0xFFF1C21B); // Yellow 30
 
-  static const Color orange = Color(0xFFFF6600);
-  static const Color purple = Color(0xFF8800FF);
+  // Legacy aliases
+  static const Color black     = backgroundDeep;
+  static const Color darkGrey  = backgroundPanel;
+  static const Color midGrey   = backgroundCard;
+  static const Color lightGrey = backgroundHover;
+  static const Color white     = textPrimary;
+  static const Color textDimLegacy = textSecondary;
+  static const Color red    = accentRed;
+  static const Color redDark = accentRedDark;
+  static const Color redGlow = Color(0x40FA4D56);
+  static const Color blue   = accentCyan;
+  static const Color blueDark = accentCyanDim;
+  static const Color blueGlow = Color(0x2278A9FF);
+  static const Color yellow = supportWarning;
+  static const Color yellowGlow = Color(0x22F1C21B);
+  static const Color green  = supportSuccess;
+  static const Color greenDark = Color(0xFF24A148);
+  static const Color orange = accentRed;
+  static const Color purple = accentCyan;
 
-  static const Color white = Color(0xFFEEEEEE);
-  static const Color textDim = Color(0xFF888888);
-
-  // Gradient backgrounds
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [black, Color(0xFF111111)],
-  );
-
-  static const LinearGradient redGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [red, redDark],
-  );
-
-  static const LinearGradient blueGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [blue, blueDark],
+    colors: [backgroundDeep, Color(0xFF0D0D0D)],
   );
 }
+
+const String kOscMonoFont = 'IBMPlexMono';
+const String kPlexSansFont = 'IBMPlexSans';
 
 class GSFTheme {
   static ThemeData get darkTheme => ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: GSFColors.black,
-        primaryColor: GSFColors.red,
+        scaffoldBackgroundColor: GSFColors.backgroundDeep,
+        primaryColor: GSFColors.accentCyan,
         colorScheme: const ColorScheme.dark(
-          primary: GSFColors.red,
-          secondary: GSFColors.blue,
-          surface: GSFColors.darkGrey,
-          error: GSFColors.red,
+          primary: GSFColors.accentCyan,
+          secondary: GSFColors.accentCyanDim,
+          surface: GSFColors.backgroundPanel,
+          error: GSFColors.accentRed,
         ),
-        fontFamily: 'ArcadeFont',
+        fontFamily: kPlexSansFont,
         textTheme: const TextTheme(
           displayLarge: TextStyle(
-            fontSize: 36,
-            fontWeight: FontWeight.w900,
-            color: GSFColors.yellow,
-            letterSpacing: 4,
+            fontSize: 32,
+            fontWeight: FontWeight.w300,
+            color: GSFColors.textPrimary,
+            letterSpacing: 0,
           ),
           displayMedium: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w900,
-            color: GSFColors.red,
-            letterSpacing: 3,
+            fontSize: 24,
+            fontWeight: FontWeight.w300,
+            color: GSFColors.textPrimary,
+            letterSpacing: 0,
           ),
           headlineMedium: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: GSFColors.white,
-            letterSpacing: 2,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: GSFColors.textPrimary,
+            letterSpacing: 0,
           ),
           titleLarge: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: GSFColors.white,
-            letterSpacing: 1.5,
-          ),
-          bodyLarge: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: GSFColors.white,
+            color: GSFColors.textPrimary,
+            letterSpacing: 0,
+          ),
+          bodyLarge: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            color: GSFColors.textPrimary,
+            height: 1.5,
           ),
           bodyMedium: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: GSFColors.textDim,
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: GSFColors.textSecondary,
+            letterSpacing: 0.16,
+            height: 1.29,
           ),
           labelLarge: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-            color: GSFColors.yellow,
-            letterSpacing: 2,
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            color: GSFColors.textSecondary,
+            letterSpacing: 0.32,
           ),
         ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: GSFColors.red,
-            foregroundColor: GSFColors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: const BorderSide(color: GSFColors.yellow, width: 2),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 3,
-            ),
-          ),
-        ),
-        cardTheme: CardThemeData(
-          color: GSFColors.darkGrey,
+        cardTheme: const CardThemeData(
+          color: GSFColors.backgroundPanel,
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-            side: const BorderSide(color: GSFColors.lightGrey, width: 1),
+            borderRadius: BorderRadius.zero,
+            side: BorderSide(color: GSFColors.borderSubtle, width: 1),
           ),
-          elevation: 8,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: GSFColors.black,
-          foregroundColor: GSFColors.yellow,
+          backgroundColor: GSFColors.backgroundDeep,
+          foregroundColor: GSFColors.textPrimary,
           elevation: 0,
-          centerTitle: true,
+          centerTitle: false,
           titleTextStyle: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-            color: GSFColors.yellow,
-            letterSpacing: 3,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: GSFColors.textPrimary,
+            letterSpacing: 0.16,
           ),
         ),
       );

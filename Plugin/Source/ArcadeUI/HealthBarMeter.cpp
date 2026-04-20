@@ -1,10 +1,12 @@
 /*
   ==============================================================================
-   GSF FIGHTER - Health Bar Meter Implementation
+   GSF FIGHTER — VU Meter (Oscilloscope Design)
+   Flat cyan bar with red clip zone, dB scale marks.
   ==============================================================================
 */
 
 #include "HealthBarMeter.h"
+#include <cmath>
 
 namespace gsf::ui
 {
@@ -23,18 +25,20 @@ void HealthBarMeter::setLevel(float peak, float rms)
 
 void HealthBarMeter::timerCallback()
 {
-    // Smooth decay
+    // Attack fast, release slow
+    const float attack = 0.7f;
+    const float release = 0.88f;
+
     if (currentPeak > displayPeak)
-        displayPeak = currentPeak;
+        displayPeak = displayPeak + (currentPeak - displayPeak) * attack;
     else
-        displayPeak = displayPeak * kDecayRate;
+        displayPeak *= release;
 
     if (currentRms > displayRms)
-        displayRms = currentRms;
+        displayRms = displayRms + (currentRms - displayRms) * attack;
     else
-        displayRms = displayRms * kDecayRate;
+        displayRms *= release;
 
-    // Peak hold
     if (currentPeak > peakHold)
     {
         peakHold = currentPeak;
@@ -55,104 +59,75 @@ void HealthBarMeter::timerCallback()
 void HealthBarMeter::paint(juce::Graphics& g)
 {
     auto bounds = getLocalBounds();
-    const int labelWidth = 36;
-    const int barHeight  = bounds.getHeight();
 
-    // Background
-    g.setColour(Colours::DarkGrey);
-    g.fillRoundedRectangle(bounds.toFloat(), 3.0f);
+    // Layout: [L] label (left), scale (top right), bar (bottom)
+    auto labelArea = bounds.removeFromLeft(20);
+    g.setColour(Colours::TextSecondary);
+    g.setFont(juce::Font(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(),
+                                           12.0f, juce::Font::plain)));
+    g.drawFittedText(label, labelArea, juce::Justification::centred, 1);
 
-    // Label area (fighter name like "P1", "P2", "L", "R")
-    auto labelBounds = leftToRight
-        ? bounds.removeFromLeft(labelWidth)
-        : bounds.removeFromRight(labelWidth);
+    bounds.removeFromLeft(6);
 
-    g.setColour(Colours::Red);
-    g.fillRoundedRectangle(labelBounds.toFloat(), 3.0f);
-    g.setColour(Colours::Yellow);
-    g.setFont(juce::Font(juce::FontOptions(14.0f, juce::Font::bold)));
-    g.drawFittedText(label, labelBounds, juce::Justification::centred, 1);
+    // Scale marks (top)
+    auto scaleArea = bounds.removeFromTop(12);
+    const float dbMarks[] = { -40.0f, -30.0f, -20.0f, -10.0f, -6.0f, -3.0f, 0.0f };
+    const int numMarks = (int) (sizeof(dbMarks) / sizeof(float));
 
-    // Bar area
-    auto barBounds = bounds.reduced(3, 4).toFloat();
-    const float barWidth = barBounds.getWidth();
-
-    // Background segments (like SF health bar segments)
-    g.setColour(Colours::Black.brighter(0.05f));
-    g.fillRoundedRectangle(barBounds, 2.0f);
-
-    // Draw segments
-    const int numSegments = 32;
-    const float segWidth = barWidth / numSegments;
-    const float gapWidth = 1.0f;
-
-    float rmsWidth = displayRms * barWidth;
-    float peakWidth = displayPeak * barWidth;
-
-    for (int i = 0; i < numSegments; ++i)
+    auto dbToPos = [&](float db) -> float
     {
-        float segStart = leftToRight
-            ? barBounds.getX() + i * segWidth
-            : barBounds.getRight() - (i + 1) * segWidth;
+        // Map -60..0 dB to 0..1 with slight non-linearity
+        float norm = juce::jlimit(0.0f, 1.0f, (db + 60.0f) / 60.0f);
+        return norm;
+    };
 
-        float segEnd = segStart + segWidth - gapWidth;
-        float segPos = i * segWidth;
+    g.setColour(Colours::TextDim);
+    g.setFont(juce::Font(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(),
+                                           8.0f, juce::Font::plain)));
+    for (int i = 0; i < numMarks; ++i)
+    {
+        float x = scaleArea.getX() + dbToPos(dbMarks[i]) * scaleArea.getWidth();
+        juce::String txt = dbMarks[i] == 0.0f
+                               ? juce::String("0")
+                               : juce::String((int) dbMarks[i]);
+        g.drawText(txt, (int) x - 12, scaleArea.getY(), 24, scaleArea.getHeight(),
+                   juce::Justification::centred, false);
+    }
 
-        juce::Rectangle<float> segRect;
-        if (leftToRight)
-            segRect = { segStart, barBounds.getY(), segWidth - gapWidth, barBounds.getHeight() };
-        else
-            segRect = { segStart + gapWidth, barBounds.getY(), segWidth - gapWidth, barBounds.getHeight() };
+    // Bar background
+    auto barArea = bounds.withTrimmedTop(2).withHeight(16).toFloat();
+    g.setColour(Colours::Black);
+    g.fillRect(barArea);
 
-        // Determine colour based on position
-        float normalizedPos = static_cast<float>(i) / numSegments;
-        juce::Colour segColour;
+    // Level fill (level is already 0..1 peak)
+    float level = juce::jlimit(0.0f, 1.0f, displayPeak);
+    float fillW = level * barArea.getWidth();
 
-        if (normalizedPos < 0.5f)
-            segColour = Colours::Green;
-        else if (normalizedPos < 0.7f)
-            segColour = Colours::Yellow;
-        else if (normalizedPos < 0.85f)
-            segColour = Colours::Orange;
-        else
-            segColour = Colours::Red;
+    // Split into cyan (0..90%) and red (90..100%)
+    float clipThreshold = 0.9f * barArea.getWidth();
 
-        // Draw based on level
-        if (segPos < rmsWidth)
+    if (fillW > 0.0f)
+    {
+        float cyanW = juce::jmin(fillW, clipThreshold);
+        juce::Rectangle<float> cyanRect { barArea.getX(), barArea.getY(),
+                                          cyanW, barArea.getHeight() };
+        g.setColour(Colours::Cyan);
+        g.fillRect(cyanRect);
+
+        if (fillW > clipThreshold)
         {
-            // Filled (RMS level)
-            g.setColour(segColour);
-            g.fillRoundedRectangle(segRect, 1.0f);
-        }
-        else if (segPos < peakWidth)
-        {
-            // Peak area (dimmer)
-            g.setColour(segColour.withAlpha(0.3f));
-            g.fillRoundedRectangle(segRect, 1.0f);
-        }
-        else
-        {
-            // Empty
-            g.setColour(Colours::Black.brighter(0.08f));
-            g.fillRoundedRectangle(segRect, 1.0f);
+            float redW = fillW - clipThreshold;
+            juce::Rectangle<float> redRect { barArea.getX() + clipThreshold,
+                                             barArea.getY(), redW, barArea.getHeight() };
+            g.setColour(Colours::Red);
+            g.fillRect(redRect);
         }
     }
 
-    // Peak hold indicator
-    if (peakHold > 0.01f)
-    {
-        float holdPos = peakHold * barWidth;
-        float holdX = leftToRight
-            ? barBounds.getX() + holdPos
-            : barBounds.getRight() - holdPos;
-
-        g.setColour(Colours::White);
-        g.drawLine(holdX, barBounds.getY(), holdX, barBounds.getBottom(), 2.0f);
-    }
-
-    // Border
-    g.setColour(Colours::LightGrey);
-    g.drawRoundedRectangle(getLocalBounds().toFloat(), 3.0f, 1.0f);
+    // Clip threshold tick mark
+    float clipX = barArea.getX() + clipThreshold;
+    g.setColour(Colours::Red.withAlpha(0.5f));
+    g.drawVerticalLine((int) clipX, barArea.getY(), barArea.getBottom());
 }
 
 } // namespace gsf::ui

@@ -1,11 +1,8 @@
-/// GSF FIGHTER - Health Bar Widget
-/// Street Fighter style health/energy bar for audio levels.
-
 import 'package:flutter/material.dart';
 import '../theme/gsf_theme.dart';
 
 class HealthBar extends StatelessWidget {
-  final double value; // 0.0 to 1.0
+  final double value;
   final String label;
   final bool reversed;
   final double height;
@@ -13,112 +10,115 @@ class HealthBar extends StatelessWidget {
   const HealthBar({
     super.key,
     required this.value,
-    this.label = 'P1',
+    this.label = 'L',
     this.reversed = false,
-    this.height = 24,
+    this.height = 28,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: height,
-      child: Row(
-        children: [
-          if (!reversed) _buildLabel(),
-          Expanded(child: _buildBar()),
-          if (reversed) _buildLabel(),
-        ],
-      ),
-    );
-  }
+    final clamped = value.clamp(0.0, 1.0);
+    final percent = (clamped * 100).toInt();
 
-  Widget _buildLabel() {
-    return Container(
-      width: 32,
-      decoration: BoxDecoration(
-        color: GSFColors.red,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: GSFColors.yellow,
-          fontSize: 10,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBar() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: BoxDecoration(
-        color: GSFColors.black,
-        borderRadius: BorderRadius.circular(3),
-        border: Border.all(color: GSFColors.lightGrey, width: 1),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(2),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return CustomPaint(
-              size: Size(constraints.maxWidth, constraints.maxHeight),
-              painter: _HealthBarPainter(
-                value: value.clamp(0.0, 1.0),
-                reversed: reversed,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '${label.toUpperCase()} CHANNEL',
+              style: const TextStyle(
+                color: GSFColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                letterSpacing: 0.32,
               ),
-            );
-          },
+            ),
+            Text(
+              '$percent%',
+              style: TextStyle(
+                fontFamily: kOscMonoFont,
+                color: GSFColors.accentCyan,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
         ),
-      ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: height,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return CustomPaint(
+                size: Size(constraints.maxWidth, constraints.maxHeight),
+                painter: _VuMeterPainter(value: clamped),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _HealthBarPainter extends CustomPainter {
+class _VuMeterPainter extends CustomPainter {
   final double value;
-  final bool reversed;
-  static const int segments = 32;
 
-  _HealthBarPainter({required this.value, required this.reversed});
+  _VuMeterPainter({required this.value});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final segWidth = size.width / segments;
-    final gap = 1.0;
-    final filledSegments = (value * segments).round();
+    // Background track
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      Paint()..color = GSFColors.backgroundDeep,
+    );
 
-    for (int i = 0; i < segments; i++) {
-      final segIndex = reversed ? segments - 1 - i : i;
-      final x = segIndex * segWidth;
-      final rect = Rect.fromLTWH(x + gap / 2, 0, segWidth - gap, size.height);
+    // Border
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      Paint()
+        ..color = GSFColors.borderSubtle
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
 
-      Color color;
-      final normalized = i / segments;
-      if (normalized < 0.5) {
-        color = GSFColors.green;
-      } else if (normalized < 0.7) {
-        color = GSFColors.yellow;
-      } else if (normalized < 0.85) {
-        color = GSFColors.orange;
-      } else {
-        color = GSFColors.red;
-      }
+    final fillW = value * size.width;
+    if (fillW <= 0) return;
 
-      if (i < filledSegments) {
-        canvas.drawRect(rect, Paint()..color = color);
-      } else {
-        canvas.drawRect(
-          rect,
-          Paint()..color = GSFColors.black.withValues(alpha: 0.5),
-        );
-      }
+    const clipThreshold = 0.9;
+    final clipX = clipThreshold * size.width;
+
+    // Blue body (0..90%)
+    final blueW = fillW.clamp(0.0, clipX);
+    if (blueW > 0) {
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, blueW, size.height),
+        Paint()..color = GSFColors.accentCyan,
+      );
     }
+
+    // Red clip zone (90..100%)
+    if (fillW > clipX) {
+      final redW = fillW - clipX;
+      canvas.drawRect(
+        Rect.fromLTWH(clipX, 0, redW, size.height),
+        Paint()..color = GSFColors.accentRed,
+      );
+    }
+
+    // Clip threshold tick
+    canvas.drawLine(
+      Offset(clipX, 0),
+      Offset(clipX, size.height),
+      Paint()
+        ..color = GSFColors.accentRed.withValues(alpha: 0.5)
+        ..strokeWidth = 1,
+    );
   }
 
   @override
-  bool shouldRepaint(_HealthBarPainter old) =>
-      old.value != value || old.reversed != reversed;
+  bool shouldRepaint(_VuMeterPainter old) => old.value != value;
 }

@@ -1,29 +1,35 @@
 import type { Metadata } from "next";
-import { Geist_Mono } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
-const mono = Geist_Mono({
-  variable: "--font-mono",
+const plex = IBM_Plex_Sans({
+  variable: "--font-plex",
   subsets: ["latin"],
+  weight: ["300", "400", "600"],
+});
+
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  subsets: ["latin"],
+  weight: ["400"],
 });
 
 export const metadata: Metadata = {
-  title: "GSF FIGHTER — Master Bus Streaming x Gesaffelstein",
+  title: "GSF Fighter — Master Bus Streaming System",
   description:
-    "Stream your DAW master bus to mobile in real-time. 6 Translation presets by Gesaffelstein. Street Fighter arcade aesthetic.",
+    "Stream your DAW master bus to mobile in real-time. Check your mix on phone speaker instantly.",
   keywords: [
-    "GSF FIGHTER",
-    "Gesaffelstein",
+    "GSF Fighter",
     "DAW streaming",
-    "Mix to Mobile",
+    "master bus",
     "audio plugin",
     "JUCE",
     "VST3",
     "AU",
   ],
   openGraph: {
-    title: "GSF FIGHTER",
-    description: "Master Bus Streaming System x Gesaffelstein",
+    title: "GSF Fighter",
+    description: "Master Bus Streaming System",
     type: "website",
   },
 };
@@ -34,8 +40,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${mono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col scanlines">{children}</body>
+    <html lang="en" className={`${plex.variable} ${plexMono.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-plex), 'Helvetica Neue', Arial, sans-serif" }}>
+        {children}
+      </body>
     </html>
   );
 }

@@ -1,173 +1,109 @@
 @import "tailwindcss";
 
 :root {
-  --gsf-black: #0a0a0a;
-  --gsf-dark: #1a1a1a;
-  --gsf-mid: #2a2a2a;
-  --gsf-grey: #444444;
-  --gsf-red: #ff1e1e;
-  --gsf-red-dark: #8b0000;
-  --gsf-blue: #00c8ff;
-  --gsf-blue-dark: #0066aa;
-  --gsf-yellow: #ffe500;
-  --gsf-green: #00ff66;
-  --gsf-orange: #ff6600;
-  --gsf-purple: #8800ff;
-  --gsf-white: #eeeeee;
-  --gsf-dim: #888888;
+  /* IBM Carbon — Gray Scale */
+  --cds-gray-100: #161616;
+  --cds-gray-90: #262626;
+  --cds-gray-80: #393939;
+  --cds-gray-70: #525252;
+  --cds-gray-60: #6f6f6f;
+  --cds-gray-50: #8d8d8d;
+  --cds-gray-30: #c6c6c6;
+  --cds-gray-20: #e0e0e0;
+  --cds-gray-10: #f4f4f4;
+  --cds-gray-10-hover: #e8e8e8;
+  --cds-white: #ffffff;
+
+  /* IBM Carbon — Blue Interactive */
+  --cds-blue-60: #0f62fe;
+  --cds-blue-70: #0043ce;
+  --cds-blue-80: #002d9c;
+  --cds-blue-10: #edf5ff;
+
+  /* IBM Carbon — Support */
+  --cds-red-60: #da1e28;
+  --cds-green-50: #24a148;
+  --cds-yellow-30: #f1c21b;
+
+  /* Semantic tokens */
+  --cds-background: var(--cds-white);
+  --cds-text-primary: var(--cds-gray-100);
+  --cds-text-secondary: var(--cds-gray-70);
+  --cds-text-placeholder: var(--cds-gray-60);
+  --cds-link-primary: var(--cds-blue-60);
+  --cds-link-primary-hover: var(--cds-blue-70);
+  --cds-border-subtle: var(--cds-gray-30);
+  --cds-layer-01: var(--cds-gray-10);
+  --cds-layer-01-hover: var(--cds-gray-10-hover);
+  --cds-button-primary: var(--cds-blue-60);
+  --cds-button-primary-hover: #0353e9;
+  --cds-button-primary-active: var(--cds-blue-80);
+  --cds-button-secondary: var(--cds-gray-80);
+  --cds-button-secondary-hover: #4c4c4c;
+  --cds-focus: var(--cds-blue-60);
+  --cds-support-error: var(--cds-red-60);
+  --cds-support-success: var(--cds-green-50);
 }
 
 @theme inline {
-  --color-background: var(--gsf-black);
-  --color-foreground: var(--gsf-white);
-  --color-gsf-black: var(--gsf-black);
-  --color-gsf-dark: var(--gsf-dark);
-  --color-gsf-mid: var(--gsf-mid);
-  --color-gsf-grey: var(--gsf-grey);
-  --color-gsf-red: var(--gsf-red);
-  --color-gsf-red-dark: var(--gsf-red-dark);
-  --color-gsf-blue: var(--gsf-blue);
-  --color-gsf-blue-dark: var(--gsf-blue-dark);
-  --color-gsf-yellow: var(--gsf-yellow);
-  --color-gsf-green: var(--gsf-green);
-  --color-gsf-orange: var(--gsf-orange);
-  --color-gsf-purple: var(--gsf-purple);
-  --color-gsf-white: var(--gsf-white);
-  --color-gsf-dim: var(--gsf-dim);
+  --color-background: var(--cds-background);
+  --color-foreground: var(--cds-text-primary);
+  --color-cds-white: var(--cds-white);
+  --color-cds-gray-100: var(--cds-gray-100);
+  --color-cds-gray-90: var(--cds-gray-90);
+  --color-cds-gray-80: var(--cds-gray-80);
+  --color-cds-gray-70: var(--cds-gray-70);
+  --color-cds-gray-60: var(--cds-gray-60);
+  --color-cds-gray-50: var(--cds-gray-50);
+  --color-cds-gray-30: var(--cds-gray-30);
+  --color-cds-gray-20: var(--cds-gray-20);
+  --color-cds-gray-10: var(--cds-gray-10);
+  --color-cds-gray-10-hover: var(--cds-gray-10-hover);
+  --color-cds-blue-60: var(--cds-blue-60);
+  --color-cds-blue-70: var(--cds-blue-70);
+  --color-cds-blue-80: var(--cds-blue-80);
+  --color-cds-blue-10: var(--cds-blue-10);
+  --color-cds-red-60: var(--cds-red-60);
+  --color-cds-green-50: var(--cds-green-50);
+  --color-cds-yellow-30: var(--cds-yellow-30);
 }
 
 body {
-  background: var(--gsf-black);
-  color: var(--gsf-white);
+  background: var(--cds-background);
+  color: var(--cds-text-primary);
   overflow-x: hidden;
 }
 
-/* Scanlines overlay */
-.scanlines::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 9999;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(255, 255, 255, 0.015) 2px,
-    rgba(255, 255, 255, 0.015) 3px
-  );
-}
-
-/* Grid background */
-.grid-bg {
-  background-image:
-    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-/* Text glow effects */
-.glow-red {
-  text-shadow: 0 0 20px rgba(255, 30, 30, 0.6), 0 0 40px rgba(255, 30, 30, 0.3);
-}
-.glow-yellow {
-  text-shadow: 0 0 20px rgba(255, 229, 0, 0.6), 0 0 40px rgba(255, 229, 0, 0.3);
-}
-.glow-blue {
-  text-shadow: 0 0 20px rgba(0, 200, 255, 0.6), 0 0 40px rgba(0, 200, 255, 0.3);
-}
-.glow-green {
-  text-shadow: 0 0 20px rgba(0, 255, 102, 0.6), 0 0 40px rgba(0, 255, 102, 0.3);
-}
-
-/* Box glow */
-.box-glow-red {
-  box-shadow: 0 0 20px rgba(255, 30, 30, 0.3), inset 0 0 20px rgba(255, 30, 30, 0.05);
-}
-.box-glow-blue {
-  box-shadow: 0 0 20px rgba(0, 200, 255, 0.3), inset 0 0 20px rgba(0, 200, 255, 0.05);
-}
-.box-glow-yellow {
-  box-shadow: 0 0 20px rgba(255, 229, 0, 0.3), inset 0 0 20px rgba(255, 229, 0, 0.05);
-}
-
-/* Arcade border */
-.arcade-border {
-  border: 2px solid var(--gsf-grey);
-  position: relative;
-}
-.arcade-border::before {
-  content: '';
-  position: absolute;
-  top: -1px;
-  left: -1px;
-  right: -1px;
-  bottom: -1px;
-  border: 1px solid rgba(255,255,255,0.05);
-  pointer-events: none;
-}
-
-/* Health bar animation */
-@keyframes health-fill {
-  from { width: 0; }
-  to { width: 100%; }
-}
-.health-animate {
-  animation: health-fill 1.5s ease-out forwards;
-}
-
-/* Pulse animation */
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
-}
-.pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* Fight text slam */
-@keyframes slam-in {
-  0% { transform: scale(3); opacity: 0; }
-  50% { transform: scale(0.9); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
-}
-.slam-in {
-  animation: slam-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Fade up */
+/* Fade up animation */
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(30px); }
+  from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .fade-up {
-  animation: fade-up 0.8s ease-out forwards;
+  animation: fade-up 0.6s ease-out forwards;
   opacity: 0;
 }
-
-/* Stagger delays */
 .delay-1 { animation-delay: 0.1s; }
 .delay-2 { animation-delay: 0.2s; }
 .delay-3 { animation-delay: 0.3s; }
 .delay-4 { animation-delay: 0.4s; }
-.delay-5 { animation-delay: 0.5s; }
-.delay-6 { animation-delay: 0.6s; }
-.delay-7 { animation-delay: 0.7s; }
 
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--gsf-black);
+  background: var(--cds-gray-10);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--gsf-grey);
-  border-radius: 3px;
+  background: var(--cds-gray-30);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--gsf-red);
+  background: var(--cds-gray-50);
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid var(--cds-focus);
+  outline-offset: 2px;
 }

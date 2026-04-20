@@ -1,241 +1,247 @@
 /*
   ==============================================================================
-   GSF FIGHTER - Preset Panel Implementation
+   GSF FIGHTER — Sidebar Navigation Panel Implementation
   ==============================================================================
 */
 
 #include "PresetPanel.h"
+#include <cmath>
 
 namespace gsf::ui
 {
 
 PresetPanel::PresetPanel()
 {
-    presetSlots = {{
-        { gsf::PresetID::Flat,           "FLAT",          "BYPASS",    Colours::LightGrey,  "X" },
-        { gsf::PresetID::iPhoneSpeaker,  "iPHONE",        "RYU",      Colours::Blue,       "R" },
-        { gsf::PresetID::AirPodsPro,     "AIRPODS",       "CHUN-LI",  Colours::Purple,     "C" },
-        { gsf::PresetID::Voiture,        "VOITURE",       "GUILE",    Colours::Green,      "G" },
-        { gsf::PresetID::ClubSystem,     "CLUB",          "AKUMA",    Colours::Red,        "A" },
-        { gsf::PresetID::CheapEarbuds,   "CHEAP",         "BLANKA",   Colours::Yellow,     "B" },
-        { gsf::PresetID::StudioMonitors, "STUDIO",        "SAGAT",    Colours::Orange,     "S" },
+    navItems = {{
+        { "INPUT MATRIX",    gsf::PresetID::Flat          },
+        { "OUTPUT ROUTING",  gsf::PresetID::iPhoneSpeaker  },
+        { "CLOCK SOURCE",    gsf::PresetID::AirPodsPro    },
+        { "BUFFER SIZE",     gsf::PresetID::Voiture       },
+        { "NETWORK SYNC",    gsf::PresetID::StudioMonitors },
     }};
-
-    for (int i = 0; i < 7; ++i)
-    {
-        auto& slot = presetSlots[i];
-        auto btn = std::make_unique<ArcadeButton>(slot.shortName, ArcadeButton::Style::Round);
-        btn->setClickingTogglesState(false);
-
-        const int idx = i;
-        btn->onClick = [this, idx]()
-        {
-            activePreset = presetSlots[idx].id;
-            updateButtonStates();
-            if (onPresetChanged)
-                onPresetChanged(activePreset);
-        };
-
-        addAndMakeVisible(*btn);
-        presetButtons[i] = std::move(btn);
-    }
-
-    updateButtonStates();
+    setMouseCursor(juce::MouseCursor::PointingHandCursor);
 }
 
 void PresetPanel::setActivePreset(gsf::PresetID preset)
 {
     activePreset = preset;
-    updateButtonStates();
-    repaint();
-}
-
-void PresetPanel::updateButtonStates()
-{
-    for (int i = 0; i < 7; ++i)
+    for (size_t i = 0; i < navItems.size(); ++i)
     {
-        bool isActive = presetSlots[i].id == activePreset;
-        presetButtons[i]->setToggleState(isActive, juce::dontSendNotification);
-    }
-    repaint();
-}
-
-void PresetPanel::paint(juce::Graphics& g)
-{
-    auto bounds = getLocalBounds();
-
-    // Background
-    g.setColour(Colours::DarkGrey);
-    g.fillRoundedRectangle(bounds.toFloat(), 5.0f);
-    GSFLookAndFeel::drawArcadeBorder(g, bounds, Colours::Blue);
-
-    // Header
-    auto header = bounds.removeFromTop(32).reduced(8, 4);
-    g.setFont(juce::Font(juce::FontOptions(18.0f, juce::Font::bold)));
-    g.setColour(Colours::Yellow);
-    g.drawFittedText("SELECT YOUR FIGHTER", header, juce::Justification::centred, 1);
-
-    // Active preset info
-    auto infoArea = bounds.removeFromBottom(50).reduced(8, 4);
-    g.setFont(juce::Font(juce::FontOptions(14.0f, juce::Font::bold)));
-
-    // Find active slot
-    for (const auto& slot : presetSlots)
-    {
-        if (slot.id == activePreset)
+        if (navItems[i].associatedPreset == preset)
         {
-            g.setColour(slot.colour);
-            g.drawFittedText("ACTIVE: " + slot.name, infoArea.removeFromTop(20),
-                             juce::Justification::centred, 1);
-            g.setColour(Colours::TextDim);
-            g.setFont(juce::Font(juce::FontOptions(11.0f, juce::Font::bold)));
-            g.drawFittedText(gsf::presetName(activePreset), infoArea,
-                             juce::Justification::centred, 1);
+            selectedIndex = (int) i;
             break;
         }
     }
-
-    // Draw fighter silhouettes for each preset
-    auto gridArea = bounds.reduced(8, 4);
-    int cols = 4;
-    int rows = 2;
-    int cellW = gridArea.getWidth() / cols;
-    int cellH = gridArea.getHeight() / rows;
-
-    for (int i = 0; i < 7; ++i)
-    {
-        int col = i % cols;
-        int row = i / cols;
-        auto cell = juce::Rectangle<int>(
-            gridArea.getX() + col * cellW,
-            gridArea.getY() + row * cellH,
-            cellW, cellH).reduced(2);
-
-        bool isActive = presetSlots[i].id == activePreset;
-        drawFighterSilhouette(g, cell.removeFromTop(cell.getHeight() - 40), i, isActive);
-    }
+    repaint();
 }
 
 void PresetPanel::resized()
 {
     auto bounds = getLocalBounds();
-    bounds.removeFromTop(32);  // Header
-    bounds.removeFromBottom(50); // Info
+    headerArea = bounds.removeFromTop(80);
 
-    auto gridArea = bounds.reduced(8, 4);
-    int cols = 4;
-    int rows = 2;
-    int cellW = gridArea.getWidth() / cols;
-    int cellH = gridArea.getHeight() / rows;
-
-    for (int i = 0; i < 7; ++i)
+    const int itemH = 40;
+    bounds.removeFromTop(4);
+    for (size_t i = 0; i < navItems.size(); ++i)
     {
-        int col = i % cols;
-        int row = i / cols;
-        auto cell = juce::Rectangle<int>(
-            gridArea.getX() + col * cellW,
-            gridArea.getY() + row * cellH,
-            cellW, cellH).reduced(4);
-
-        // Button at bottom of cell
-        presetButtons[i]->setBounds(cell.removeFromBottom(36));
+        itemBounds[i] = bounds.removeFromTop(itemH);
     }
 }
 
-void PresetPanel::drawFighterSilhouette(juce::Graphics& g, juce::Rectangle<int> bounds,
-                                         int presetIndex, bool isActive)
+void PresetPanel::mouseMove(const juce::MouseEvent& e)
 {
-    auto& slot = presetSlots[presetIndex];
-    auto centre = bounds.getCentre().toFloat();
-    float size = juce::jmin(bounds.getWidth(), bounds.getHeight()) * 0.6f;
-
-    // Fighter silhouette (simplified geometric representation)
-    juce::Path silhouette;
-
-    // Different pose for each fighter
-    switch (presetIndex)
+    int newHover = -1;
+    for (size_t i = 0; i < itemBounds.size(); ++i)
     {
-        case 0: // FLAT - X mark (bypass)
-            silhouette.addLineSegment(juce::Line<float>(
-                centre.x - size * 0.3f, centre.y - size * 0.3f,
-                centre.x + size * 0.3f, centre.y + size * 0.3f), 3.0f);
-            silhouette.addLineSegment(juce::Line<float>(
-                centre.x + size * 0.3f, centre.y - size * 0.3f,
-                centre.x - size * 0.3f, centre.y + size * 0.3f), 3.0f);
-            break;
-
-        case 1: // iPhone - hadouken pose
-        case 2: // AirPods - kick pose
-        case 3: // Voiture - guard pose
-        case 4: // Club - power pose
-        case 5: // Cheap - crouch pose
-        case 6: // Studio - standing pose
+        if (itemBounds[i].contains(e.getPosition()))
         {
-            // Head
-            float headY = centre.y - size * 0.35f;
-            silhouette.addEllipse(centre.x - size * 0.1f, headY - size * 0.1f,
-                                  size * 0.2f, size * 0.2f);
-            // Body
-            silhouette.addRectangle(centre.x - size * 0.08f, headY + size * 0.1f,
-                                    size * 0.16f, size * 0.35f);
-            // Arms (different poses)
-            float armY = headY + size * 0.15f;
-            if (presetIndex == 1 || presetIndex == 4)
-            {
-                // Arms extended forward (hadouken/power)
-                silhouette.addRectangle(centre.x + size * 0.08f, armY,
-                                        size * 0.3f, size * 0.06f);
-                silhouette.addRectangle(centre.x - size * 0.08f - size * 0.15f, armY + size * 0.08f,
-                                        size * 0.15f, size * 0.06f);
-            }
-            else
-            {
-                // Arms at sides
-                silhouette.addRectangle(centre.x + size * 0.08f, armY,
-                                        size * 0.06f, size * 0.25f);
-                silhouette.addRectangle(centre.x - size * 0.14f, armY,
-                                        size * 0.06f, size * 0.25f);
-            }
-            // Legs
-            float legY = headY + size * 0.45f;
-            if (presetIndex == 2)
-            {
-                // Kick pose
-                silhouette.addRectangle(centre.x - size * 0.06f, legY,
-                                        size * 0.06f, size * 0.3f);
-                silhouette.addRectangle(centre.x + size * 0.02f, legY,
-                                        size * 0.3f, size * 0.06f);
-            }
-            else
-            {
-                silhouette.addRectangle(centre.x - size * 0.1f, legY,
-                                        size * 0.08f, size * 0.3f);
-                silhouette.addRectangle(centre.x + size * 0.02f, legY,
-                                        size * 0.08f, size * 0.3f);
-            }
+            newHover = (int) i;
             break;
         }
     }
-
-    // Draw silhouette
-    auto drawColour = isActive ? slot.colour : slot.colour.withAlpha(0.3f);
-    g.setColour(drawColour);
-    g.fillPath(silhouette);
-
-    if (isActive)
+    if (newHover != hoverIndex)
     {
-        // Glow around silhouette
-        g.setColour(slot.colour.withAlpha(0.15f));
-        g.strokePath(silhouette, juce::PathStrokeType(4.0f));
+        hoverIndex = newHover;
+        repaint();
+    }
+}
+
+void PresetPanel::mouseExit(const juce::MouseEvent&)
+{
+    if (hoverIndex != -1)
+    {
+        hoverIndex = -1;
+        repaint();
+    }
+}
+
+void PresetPanel::mouseDown(const juce::MouseEvent& e)
+{
+    for (size_t i = 0; i < itemBounds.size(); ++i)
+    {
+        if (itemBounds[i].contains(e.getPosition()))
+        {
+            selectedIndex = (int) i;
+            activePreset = navItems[i].associatedPreset;
+            if (onPresetChanged) onPresetChanged(activePreset);
+            repaint();
+            return;
+        }
+    }
+}
+
+void PresetPanel::paint(juce::Graphics& g)
+{
+    drawHeader(g);
+
+    for (int i = 0; i < (int) navItems.size(); ++i)
+        drawNavItem(g, i);
+}
+
+void PresetPanel::drawHeader(juce::Graphics& g)
+{
+    auto area = headerArea.reduced(18, 14);
+
+    // "ENGINE ALPHA" dim label
+    g.setColour(Colours::TextDim);
+    g.setFont(juce::Font(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(),
+                                           9.0f, juce::Font::plain)));
+    auto engineLine = area.removeFromTop(12);
+    g.drawFittedText("ENGINE ALPHA", engineLine, juce::Justification::centredLeft, 1);
+    area.removeFromTop(4);
+
+    // "MONITOR_01" big title
+    g.setColour(Colours::White);
+    g.setFont(juce::Font(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(),
+                                           16.0f, juce::Font::plain)));
+    auto titleLine = area.removeFromTop(20);
+    g.drawFittedText("MONITOR_01", titleLine, juce::Justification::centredLeft, 1);
+    area.removeFromTop(2);
+
+    // "48KHZ / 24-BIT" cyan subtitle
+    g.setColour(Colours::Cyan);
+    g.setFont(juce::Font(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(),
+                                           9.0f, juce::Font::plain)));
+    g.drawFittedText("48KHZ / 24-BIT", area.removeFromTop(12),
+                     juce::Justification::centredLeft, 1);
+
+    // Bottom divider
+    g.setColour(Colours::BorderSubtle);
+    g.drawHorizontalLine(headerArea.getBottom() - 1,
+                         (float) headerArea.getX() + 14.0f,
+                         (float) headerArea.getRight() - 14.0f);
+}
+
+void PresetPanel::drawNavItem(juce::Graphics& g, int index)
+{
+    auto area = itemBounds[(size_t) index];
+    const bool isSelected = (index == selectedIndex);
+    const bool isHover    = (index == hoverIndex) && !isSelected;
+
+    // Background
+    if (isSelected)
+    {
+        g.setColour(Colours::Cyan);
+        g.fillRect(area);
+    }
+    else if (isHover)
+    {
+        g.setColour(Colours::LightGrey);
+        g.fillRect(area);
     }
 
-    // Name label
-    g.setFont(juce::Font(juce::FontOptions(9.0f, juce::Font::bold)));
-    g.setColour(isActive ? Colours::White : Colours::TextDim);
-    g.drawFittedText(slot.name,
-                     juce::Rectangle<int>(bounds.getX(), bounds.getBottom() - 14,
-                                           bounds.getWidth(), 14),
-                     juce::Justification::centred, 1);
+    auto iconColour = isSelected
+                          ? Colours::Black
+                          : (isHover ? Colours::White : Colours::TextDim);
+
+    auto textColour = iconColour;
+
+    // Icon zone (left 44 px)
+    auto iconArea = area.withWidth(44);
+    drawNavIcon(g, iconArea.reduced(12), index, iconColour);
+
+    // Label
+    g.setColour(textColour);
+    g.setFont(juce::Font(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(),
+                                           9.0f,
+                                           isSelected ? juce::Font::bold : juce::Font::plain)));
+    auto labelArea = area.withTrimmedLeft(44).withTrimmedRight(12);
+    g.drawFittedText(navItems[(size_t) index].label, labelArea,
+                     juce::Justification::centredLeft, 1);
+}
+
+void PresetPanel::drawNavIcon(juce::Graphics& g, juce::Rectangle<int> area,
+                              int index, juce::Colour colour)
+{
+    g.setColour(colour);
+    auto c = area.toFloat();
+
+    switch (index)
+    {
+        case 0: // INPUT MATRIX: 4 small squares
+        {
+            float size = 5.0f;
+            float gap  = 3.0f;
+            float total = 2.0f * size + gap;
+            float x0 = c.getCentreX() - total * 0.5f;
+            float y0 = c.getCentreY() - total * 0.5f;
+            for (int row = 0; row < 2; ++row)
+                for (int col = 0; col < 2; ++col)
+                    g.fillRect(juce::Rectangle<float>(x0 + col * (size + gap),
+                                                      y0 + row * (size + gap),
+                                                      size, size));
+            break;
+        }
+        case 1: // OUTPUT ROUTING: arrows
+        {
+            juce::Path arrow;
+            float cx = c.getCentreX();
+            float cy = c.getCentreY();
+            arrow.addLineSegment(juce::Line<float>(cx - 6.0f, cy, cx + 6.0f, cy), 1.3f);
+            arrow.addLineSegment(juce::Line<float>(cx + 3.0f, cy - 3.0f, cx + 6.0f, cy), 1.3f);
+            arrow.addLineSegment(juce::Line<float>(cx + 3.0f, cy + 3.0f, cx + 6.0f, cy), 1.3f);
+            g.strokePath(arrow, juce::PathStrokeType(1.3f));
+            break;
+        }
+        case 2: // CLOCK SOURCE: circle with hands
+        {
+            float r = 7.0f;
+            g.drawEllipse(c.getCentreX() - r, c.getCentreY() - r, r * 2.0f, r * 2.0f, 1.3f);
+            g.drawLine(c.getCentreX(), c.getCentreY(),
+                       c.getCentreX(), c.getCentreY() - r * 0.6f, 1.3f);
+            g.drawLine(c.getCentreX(), c.getCentreY(),
+                       c.getCentreX() + r * 0.5f, c.getCentreY(), 1.3f);
+            break;
+        }
+        case 3: // BUFFER SIZE: gear
+        {
+            float r = 6.0f;
+            g.drawEllipse(c.getCentreX() - r, c.getCentreY() - r, r * 2.0f, r * 2.0f, 1.3f);
+            for (int i = 0; i < 6; ++i)
+            {
+                float a = (float) i * juce::MathConstants<float>::pi / 3.0f;
+                float x1 = c.getCentreX() + std::cos(a) * (r + 1.0f);
+                float y1 = c.getCentreY() + std::sin(a) * (r + 1.0f);
+                float x2 = c.getCentreX() + std::cos(a) * (r + 3.0f);
+                float y2 = c.getCentreY() + std::sin(a) * (r + 3.0f);
+                g.drawLine(x1, y1, x2, y2, 1.3f);
+            }
+            break;
+        }
+        case 4: // NETWORK SYNC: nodes
+        {
+            g.fillEllipse(c.getCentreX() - 7.0f, c.getCentreY() - 2.0f, 3.0f, 3.0f);
+            g.fillEllipse(c.getCentreX() + 4.0f, c.getCentreY() - 5.0f, 3.0f, 3.0f);
+            g.fillEllipse(c.getCentreX() + 4.0f, c.getCentreY() + 3.0f, 3.0f, 3.0f);
+            g.drawLine(c.getCentreX() - 5.5f, c.getCentreY() - 0.5f,
+                       c.getCentreX() + 5.5f, c.getCentreY() - 3.5f, 1.0f);
+            g.drawLine(c.getCentreX() - 5.5f, c.getCentreY() - 0.5f,
+                       c.getCentreX() + 5.5f, c.getCentreY() + 4.5f, 1.0f);
+            break;
+        }
+        default: break;
+    }
 }
 
 } // namespace gsf::ui
